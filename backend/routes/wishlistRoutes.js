@@ -1,6 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const Wishlist = require('../models/wishlist');
+const mongoose = require('mongoose');
+
+// Directly defining the schema inside routes to eliminate module not found errors!
+const wishlistSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'User reference is required!']
+  },
+  cars: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Car'
+  }]
+}, {
+  timestamps: true
+});
+
+const Wishlist = mongoose.models.FavWishlist || mongoose.model('FavWishlist', wishlistSchema);
+
 const validateMiddleware = require('../middleware/validateMiddleware');
 const { body } = require('express-validator');
 
@@ -11,19 +29,17 @@ const wishlistValidation = [
 ];
 
 // @route   GET /api/wishlist
-// @desc    Get user wishlist items (filtered by user query)
 router.get('/', async (req, res, next) => {
   try {
     const { user } = req.query;
     let filter = {};
-
     if (user) filter.user = user;
 
     const wishlistItems = await Wishlist.find(filter)
       .sort({ createdAt: -1 })
       .populate('user', 'name email')
       .populate({
-        path: 'car',
+        path: 'cars',
         populate: [
           { path: 'brand', select: 'name logo' },
           { path: 'category', select: 'name image' },
@@ -42,24 +58,27 @@ router.get('/', async (req, res, next) => {
 });
 
 // @route   POST /api/wishlist
-// @desc    Add a car to wishlist
 router.post('/', wishlistValidation, validateMiddleware, async (req, res, next) => {
   try {
     const { user, car } = req.body;
 
-    const existingWishlistItem = await Wishlist.findOne({ user, car });
-    if (existingWishlistItem) {
-      return res.status(400).json({
-        success: false,
-        message: 'This car is already in your wishlist!'
-      });
+    let wishlist = await Wishlist.findOne({ user });
+    if (!wishlist) {
+      wishlist = new Wishlist({ user, cars: [car] });
+    } else {
+      if (wishlist.cars.includes(car)) {
+        return res.status(400).json({
+          success: false,
+          message: 'This car is already in your wishlist!'
+        });
+      }
+      wishlist.cars.push(car);
     }
 
-    const newWishlistItem = new Wishlist({ user, car });
-    await newWishlistItem.save();
+    await wishlist.save();
 
-    await newWishlistItem.populate({
-      path: 'car',
+    await wishlist.populate({
+      path: 'cars',
       populate: [
         { path: 'brand', select: 'name logo' },
         { path: 'category', select: 'name image' },
@@ -70,7 +89,7 @@ router.post('/', wishlistValidation, validateMiddleware, async (req, res, next) 
     res.status(201).json({
       success: true,
       message: 'Car added to wishlist successfully!',
-      data: newWishlistItem
+      data: wishlist
     });
   } catch (error) {
     next(error);
@@ -78,17 +97,42 @@ router.post('/', wishlistValidation, validateMiddleware, async (req, res, next) 
 });
 
 // @route   DELETE /api/wishlist/:id
-// @desc    Remove an item from wishlist by wishlist ID
 router.delete('/:id', async (req, res, next) => {
   try {
     const wishlistItem = await Wishlist.findByIdAndDelete(req.params.id);
-
     if (!wishlistItem) {
       return res.status(404).json({
         success: false,
         message: 'Wishlist item not found!'
       });
     }
+    res.status(200).json({
+      success: true,
+      message: 'Car removed from wishlist successfully!'
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @route   DELETE /api/wishlist/remove
+router.delete('/remove', [
+  body('user').notEmpty().withMessage('User reference is required!'),
+  body('car').notEmpty().withMessage('Car reference is required!')
+], validateMiddleware, async (req, res, next) => {
+  try {
+    const { user, car } = req.body;
+
+    const wishlist = await Wishlist.findOne({ user });
+    if (!wishlist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Wishlist not found!'
+      });
+    }
+
+    wishlist.cars = wishlist.cars.filter(c => c.toString() !== car);
+    await wishlist.save();
 
     res.status(200).json({
       success: true,

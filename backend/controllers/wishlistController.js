@@ -1,4 +1,4 @@
-const Wishlist = require('../models/Wishlist');
+const Wishlist = require('../models/wishlist');
 
 // 1. Add Item to Wishlist (Array-ல் காரைச் சேர்த்தல்)
 const addToWishlist = async (req, res) => {

@@ -1,6 +1,6 @@
 const Wishlist = require('../models/wishlist');
 
-// 1. Add Item to Wishlist (Array-ல் காரைச் சேர்த்தல்)
+// 1. Add Item to Wishlist (விஷ்லிஸ்ட்டில் காரைச் சேர்த்தல்)
 const addToWishlist = async (req, res) => {
   console.log("🔥 HIT ADD TO WISHLIST API! Body data:", req.body);
   try {
@@ -25,11 +25,12 @@ const addToWishlist = async (req, res) => {
         cars: [carId]
       });
     } else {
-      // ஏற்கனவே இருந்தால், அந்த கார் ஏற்கனவே உள்ளதா எனச் சரிபார்த்தல்
-      if (wishlist.cars.includes(carId)) {
+      // ஏற்கனவே இருந்தால், அந்த கார் ஏற்கனவே உள்ளதா எனச் சரிபார்த்தல் (ObjectId ஒப்பீடு பாதுகாப்புடன்)
+      const carExists = wishlist.cars.some(id => id.toString() === carId.toString());
+      if (carExists) {
         return res.status(400).json({ success: false, message: 'Car is already in your wishlist' });
       }
-      // இல்லையெனில் கார்களின் பட்டியலோடு புதிய காரைச் சேர்த்தல் ($push போன்றது)
+      // இல்லையெனில் கார்களின் பட்டியலோடு புதிய காரைச் சேர்த்தல்
       wishlist.cars.push(carId);
     }
 
@@ -52,6 +53,10 @@ const getWishlist = async (req, res) => {
   try {
     const userId = req.user?._id || req.user?.id || req.query.user;
 
+    if (!userId) {
+      return res.status(400).json({ success: false, message: 'User ID is required' });
+    }
+
     // விஷ்லிஸ்ட்டை எடுத்து, உள்ளே இருக்கும் 'cars' விபரங்களை populate செய்தல்
     const wishlist = await Wishlist.findOne({ user: userId })
       .populate('cars');
@@ -66,11 +71,15 @@ const getWishlist = async (req, res) => {
   }
 };
 
-// 3. Remove Item from Wishlist (Array-லிருந்து குறிப்பிட்ட காரை நீக்குதல்)
+// 3. Remove Item from Wishlist (விஷ்லிஸ்ட்டிலிருந்து குறிப்பிட்ட காரை நீக்குதல்)
 const removeFromWishlist = async (req, res) => {
   try {
     const { id } = req.params; // இங்கே 'id' என்பது காரின் ID (carId) ஆகும்
     const userId = req.user?._id || req.user?.id || req.body.user;
+
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'Car ID parameter is required' });
+    }
 
     const wishlist = await Wishlist.findOne({ user: userId });
 
@@ -78,8 +87,8 @@ const removeFromWishlist = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Wishlist not found' });
     }
 
-    // குறிப்பிட்ட காரை மட்டும் அறேயிலிருந்து நீக்குதல்
-    wishlist.cars = wishlist.cars.filter(carId => carId.toString() !== id);
+    // குறிப்பிட்ட காரை மட்டும் பாதுகாப்பாக அறேயிலிருந்து நீக்குதல்
+    wishlist.cars = wishlist.cars.filter(carId => carId.toString() !== id.toString());
     await wishlist.save();
 
     res.status(200).json({ success: true, message: 'Item removed from wishlist successfully!', wishlist });

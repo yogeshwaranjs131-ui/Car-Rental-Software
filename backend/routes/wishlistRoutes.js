@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Wishlist = require('../models/wishlist');
 const validateMiddleware = require('../middleware/validateMiddleware');
-const { body, param } = require('express-validator');
+const { body } = require('express-validator');
 
 // Wishlist Validation Rules
 const wishlistValidation = [
@@ -12,7 +12,6 @@ const wishlistValidation = [
 
 // @route   GET /api/wishlist
 // @desc    Get user wishlist items (filtered by user query)
-// @access  Private
 router.get('/', async (req, res, next) => {
   try {
     const { user } = req.query;
@@ -44,12 +43,10 @@ router.get('/', async (req, res, next) => {
 
 // @route   POST /api/wishlist
 // @desc    Add a car to wishlist
-// @access  Private
 router.post('/', wishlistValidation, validateMiddleware, async (req, res, next) => {
   try {
     const { user, car } = req.body;
 
-    // Check if already in wishlist
     const existingWishlistItem = await Wishlist.findOne({ user, car });
     if (existingWishlistItem) {
       return res.status(400).json({
@@ -58,14 +55,9 @@ router.post('/', wishlistValidation, validateMiddleware, async (req, res, next) 
       });
     }
 
-    const newWishlistItem = new Wishlist({
-      user,
-      car
-    });
-
+    const newWishlistItem = new Wishlist({ user, car });
     await newWishlistItem.save();
 
-    // Populate car details for immediate frontend response
     await newWishlistItem.populate({
       path: 'car',
       populate: [
@@ -87,38 +79,9 @@ router.post('/', wishlistValidation, validateMiddleware, async (req, res, next) 
 
 // @route   DELETE /api/wishlist/:id
 // @desc    Remove an item from wishlist by wishlist ID
-// @access  Private
 router.delete('/:id', async (req, res, next) => {
   try {
     const wishlistItem = await Wishlist.findByIdAndDelete(req.params.id);
-
-    if (!wishlistItem) {
-      return res.status(404).json({
-        success: false,
-        message: 'Wishlist item not found!'
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      message: 'Car removed from wishlist successfully!'
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// @route   DELETE /api/wishlist/remove
-// @desc    Remove an item from wishlist by user and car ID
-// @access  Private
-router.delete('/remove', [ // This route seems to have a different path, which is fine
-  body('user').notEmpty().withMessage('User reference is required!'),
-  body('car').notEmpty().withMessage('Car reference is required!')
-], validateMiddleware, async (req, res, next) => {
-  try {
-    const { user, car } = req.body;
-
-    const wishlistItem = await Wishlist.findOneAndDelete({ user, car });
 
     if (!wishlistItem) {
       return res.status(404).json({

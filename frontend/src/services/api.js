@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create an axios instance with a custom config
 const API = axios.create({
-    baseURL: 'http://localhost:5000/api', // இது /api மற்றும் /api/v1 இரண்டையும் பேக்என்டில் சப்போர்ட் செய்யும்
+    baseURL: import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com/api/v1', 
     headers: {
         'Content-Type': 'application/json'
     }

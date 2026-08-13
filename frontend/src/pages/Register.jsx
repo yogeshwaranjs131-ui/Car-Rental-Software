@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import API from '../../services/api'; // <--- இங்கே உன்னுடைய api.js கோப்பின் சரியான பாதையை (path) கொடுக்கவும்
+import API from '../services/api';
 
 const carImages = [
     "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1920&q=80",
@@ -32,11 +32,10 @@ const Register = () => {
         setError(null);
 
         try {
-            // இப்போது இது நெட்லிஃபை மற்றும் ரெண்டர் இரண்டிற்கும் சரியாக ரெண்டர் பேக்டெண்டிற்குச் செல்லும்!
             const response = await API.post('/api/auth/register', formData);
             
             localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.data)); 
+            localStorage.setItem('user', JSON.stringify(response.data.data || response.data.user)); 
             alert('Registration successful!');
             navigate('/');
         } catch (err) {

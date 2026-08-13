@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import API from '../../services/api'; // <--- உன்னுடைய api.js கோப்பின் சரியான பாதையை (path) கொடுக்கவும்
+import API from '../services/api';
 
 const Login = () => {
     const carImages = [
@@ -25,7 +25,6 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // இப்போது இது நெட்லிஃபை மற்றும் ரெண்டர் இரண்டிற்கும் சரியாக ரெண்டர் பேக்டெண்டிற்குச் செல்லும்!
             const response = await API.post('/api/v1/auth/login', { email, password });
             const data = response.data;
             
@@ -46,7 +45,6 @@ const Login = () => {
 
     return (
         <div className="fixed inset-0 w-screen h-screen flex items-center justify-center bg-slate-950 overflow-hidden m-0 p-0 box-border z-50">
-            
             {/* Background Carousel Images */}
             {carImages.map((img, index) => (
                 <div key={index} className={`absolute inset-0 w-full h-full transition-opacity duration-1000 z-10 pointer-events-none ${index === currentIndex ? 'opacity-100' : 'opacity-0'}`}>
@@ -94,7 +92,6 @@ const Login = () => {
                     Don't have an account? <Link to="/register" className="text-blue-500 no-underline font-semibold hover:underline">Register</Link>
                 </p>
             </div>
-
         </div>
     );
 };

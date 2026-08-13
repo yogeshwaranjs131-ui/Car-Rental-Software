@@ -36,12 +36,21 @@ const userSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  // Added OTP fields for registration and authentication support
+  otp: {
+    type: String,
+    default: null
+  },
+  otpExpire: {
+    type: Date,
+    default: null
   }
 }, {
   timestamps: true
 });
 
-// 1. next-ஐத் தவிர்த்துவிட்டு, async/await மூலமாக நேரடியாக ஹேஷ் செய்யும் முறை (மிகவும் பாதுகாப்பானது)
+// 1. Hash password securely using async/await without next()
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) {
     return;
@@ -50,7 +59,7 @@ userSchema.pre('save', async function () {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-// 2. லாகின் செய்யும்போது பாஸ்வேரைச் சரிபார்க்கும் மெதட்
+// 2. Method to compare entered password with hashed password during login
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

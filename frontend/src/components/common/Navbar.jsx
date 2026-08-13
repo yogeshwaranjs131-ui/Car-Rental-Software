@@ -61,36 +61,7 @@ const Navbar = () => {
         navigate('/login');
     };
 
-    return (
-        <nav className="sticky top-0 left-0 w-full z-50 bg-slate-900/95 backdrop-blur-lg border-b border-white/10 px-4 sm:px-10 py-4 flex justify-between items-center shadow-xl">
-            <Link to="/" className="flex items-center gap-3 no-underline">
-                <img src="https://as1.ftcdn.net/jpg/00/65/83/52/1000_F_65835204_1jWSKhWvq7ncBkT3KZrNmm506Dorzu6q.jpg" alt="Logo" className="w-10 h-10 rounded-full object-cover border-2 border-blue-500" />
-                <span className="text-white text-xl font-extrabold tracking-wide">
-                    Car Rental
-                </span>
-            </Link>
-
-            {isMobile && (
-                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="bg-transparent border-none text-white text-2xl z-[1100] cursor-pointer md:hidden">
-                    {isMenuOpen ? '✕' : '☰'}
-                </button>
-            )}
-
-            {isMobile && isMenuOpen && (
-                <div className="fixed top-0 right-0 h-screen w-64 bg-slate-900/95 backdrop-blur-md flex flex-col items-center pt-24 z-[1050] transition-transform duration-300 ease-in-out transform-none overflow-y-auto">
-                    {renderNavLinks(true)}
-                </div>
-            )}
-
-            {!isMobile && (
-                <div className="hidden md:flex items-center gap-4">
-                    {renderNavLinks(false)}
-                </div>
-            )}
-        </nav>
-    );
-
-    function renderNavLinks(isMobileMenu) {
+    const renderNavLinks = (isMobileMenu) => {
         const baseLinkClasses = "text-slate-200 no-underline text-sm font-medium px-3 py-2 rounded-md hover:bg-slate-700 hover:text-white transition-colors duration-200";
         const mobileOnlyClasses = "w-4/5 text-center my-1";
         const desktopOnlyClasses = "w-auto text-left";
@@ -129,7 +100,39 @@ const Navbar = () => {
                 )}
             </div>
         );
-    }
+    };
+
+    return (
+        <nav className="sticky top-0 left-0 w-full z-50 bg-slate-900/95 backdrop-blur-lg border-b border-white/10 px-4 sm:px-10 py-4 flex justify-between items-center shadow-xl">
+            <Link to="/" className="flex items-center gap-3 no-underline">
+                <img src="https://as1.ftcdn.net/jpg/00/65/83/52/1000_F_65835204_1jWSKhWvq7ncBkT3KZrNmm506Dorzu6q.jpg" alt="Logo" className="w-10 h-10 rounded-full object-cover border-2 border-blue-500" />
+                <span className="text-white text-xl font-extrabold tracking-wide">
+                    Car Rental
+                </span>
+            </Link>
+
+            {/* Mobile Menu Toggle Button */}
+            {isMobile && (
+                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="bg-transparent border-none text-white text-2xl z-1100 cursor-pointer md:hidden">
+                    {isMenuOpen ? '✕' : '☰'}
+                </button>
+            )}
+
+            {/* Mobile Dropdown / Drawer Menu */}
+            {isMobile && isMenuOpen && (
+                <div className="fixed top-0 right-0 h-screen w-64 bg-slate-900/95 backdrop-blur-md flex flex-col items-center pt-24 z-1050 transition-transform duration-300 ease-in-out shadow-2xl">
+                    {renderNavLinks(true)}
+                </div>
+            )}
+
+            {/* Desktop Menu */}
+            {!isMobile && (
+                <div className="hidden md:flex items-center gap-4">
+                    {renderNavLinks(false)}
+                </div>
+            )}
+        </nav>
+    );
 };
 
 export default Navbar;

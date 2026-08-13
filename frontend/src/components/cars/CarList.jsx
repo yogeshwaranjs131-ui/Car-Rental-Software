@@ -107,7 +107,7 @@ const CarList = () => {
                                                 </Link>
                                                 <button 
                                                     onClick={() => handleDeleteCar(car._id || car.id)}
-                                                    className="p-2 text-slate-400 hover:text-red-500 transition" title="Delete"
+                                                    className="p-2 text-slate-400 hover:text-red-500 transition" title="Hosting Delete"
                                                 >
                                                     <HiTrash className="w-5 h-5" />
                                                 </button>

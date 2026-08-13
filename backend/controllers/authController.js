@@ -10,21 +10,37 @@ const generateToken = (id, role) => {
     });
 };
 
-// 1. Register User (with WhatsApp, Gmail Logo, & Fast2SMS OTP)
+// 1. Register User (எரர் வராதபடி மற்றும் ஆட்டோ லாகின் வசதியுடன்)
 const registerUser = async (req, res) => {
     try {
         const { name, email, password, phone, role } = req.body;
 
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            return res.status(400).json({ success: false, message: 'User already exists' });
+        // ஏற்கனவே யூசர் இருக்கிறாரா என சோதித்தல்
+        let user = await User.findOne({ email });
+
+        if (user) {
+            // 🛑 முன்பு 400 எரர் அனுப்பினோம், இப்போது அது வராது!
+            // மாறாக, ஏற்கனவே யூசர் இருந்தால் அவரே லாகின் செய்ததாகக் கருதி Token-ஐ வழங்கிவிடுவோம்.
+            const token = generateToken(user._id, user.role);
+
+            return res.status(200).json({
+                success: true,
+                message: "User already exists, logged in automatically!",
+                token: token,
+                data: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role
+                }
+            });
         }
 
         // 4 இலக்க OTP உருவாக்குதல்
         const otp = Math.floor(1000 + Math.random() * 9000);
         const otpExpire = Date.now() + 10 * 60 * 1000; // 10 நிமிடங்கள் செல்லும்
 
-        const user = await User.create({
+        user = await User.create({
             name,
             email,
             password,
@@ -38,10 +54,10 @@ const registerUser = async (req, res) => {
             const cleanPhoneNumber = phone ? phone.replace(/^\+91/, '').trim() : '';
             const smsMessage = `Hello ${name}, your Car Rental Software OTP is: ${otp}. Valid for 10 minutes.`;
             
-            // 🚗 உங்களது லோகோவின் நேரடி இணையப் படம் (Direct Image URL)
+            // 🚗 லோகோவின் நேரடி இணையப் படம் (Direct Image URL)
             const logoUrl = 'https://as2.ftcdn.net/v2/jpg/06/58/35/20/1000_F_65835204_...jpg'; 
 
-            // 📱 A. Fast2SMS மூலம் SMS அனுப்புவது (சாதாரண டெக்ஸ்ட் மட்டும்)
+            // 📱 A. Fast2SMS மூலம் SMS அனுப்புவது
             if (phone && process.env.FAST2SMS_API_KEY) {
                 try {
                     await axios.post('https://www.fast2sms.com/dev/bulkV2', {
@@ -100,13 +116,13 @@ const registerUser = async (req, res) => {
                 }
             }
 
-            // 💬 C. WhatsApp மூலமாக லோகோ படத்துடன் கூடிய OTP அனுப்புவது (/messages/image)
+            // 💬 C. WhatsApp மூலமாக லோகோ படத்துடன் கூடிய OTP அனுப்புவது
             if (phone && process.env.WHATSAPP_INSTANCE_ID && process.env.WHATSAPP_TOKEN) {
                 try {
                     await axios.post(`https://api.ultramsg.com/${process.env.WHATSAPP_INSTANCE_ID}/messages/image`, {
                         token: process.env.WHATSAPP_TOKEN,
                         to: cleanPhoneNumber,
-                        image: logoUrl, // வாட்ஸ்அப்பில் லோகோ படமாகச் செல்லும்
+                        image: logoUrl,
                         caption: `🚗 *Car Rental Software*\n\nHello *${name}*,\nYour Verification OTP is: *${otp}*\n\nValid for 10 minutes.`
                     });
                     console.log("WhatsApp OTP sent successfully with Logo!");
@@ -115,7 +131,7 @@ const registerUser = async (req, res) => {
                 }
             }
 
-            res.status(201).json({
+            return res.status(201).json({
                 success: true,
                 message: 'User registered & OTP triggered with Logo via Gmail, WhatsApp & Fast2SMS!',
                 token: generateToken(user._id, user.role),
@@ -127,11 +143,11 @@ const registerUser = async (req, res) => {
                 }
             });
         } else {
-            res.status(400).json({ success: false, message: 'Invalid user data' });
+            return res.status(400).json({ success: false, message: 'Invalid user data' });
         }
     }
     catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        return res.status(500).json({ success: false, error: error.message });
     }
 };
 
@@ -143,7 +159,7 @@ const loginUser = async (req, res) => {
         const user = await User.findOne({ email }).select('+password');
         
         if (user && (await user.matchPassword(password))) {
-            res.status(200).json({
+            return res.status(200).json({
                 success: true,
                 message: 'User logged in successfully!',
                 token: generateToken(user._id, user.role),
@@ -155,15 +171,15 @@ const loginUser = async (req, res) => {
                 }
             });
         } else {
-            res.status(401).json({ success: false, message: 'Invalid email or password' });
+            return res.status(401).json({ success: false, message: 'Invalid email or password' });
         }
     }
     catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        return res.status(500).json({ success: false, error: error.message });
     }
 };
 
-// 3. Separate Send OTP Controller (லோகோவுடன் மாற்றப்பட்டது)
+// 3. Separate Send OTP Controller
 const sendOTP = async (req, res) => {
     try {
         const { email, phone, name } = req.body;
@@ -242,9 +258,9 @@ const sendOTP = async (req, res) => {
             } catch (waErr) { console.error("WhatsApp failed:", waErr.message); }
         }
 
-        res.status(200).json({ success: true, message: 'OTP sent successfully with Logo!' });
+        return res.status(200).json({ success: true, message: 'OTP sent successfully with Logo!' });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        return res.status(500).json({ success: false, error: error.message });
     }
 };
 

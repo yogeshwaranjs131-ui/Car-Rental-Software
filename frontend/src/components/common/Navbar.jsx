@@ -8,27 +8,34 @@ const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-    const checkUserAuth = () => {
+    const updateAuthState = () => {
         const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
-        setIsLoggedIn(!!token);
-        if (storedUser) {
+
+        if (token && storedUser && storedUser !== "undefined") {
             try {
-                setUser(JSON.parse(storedUser));
-            } catch (error) {
-                console.error("Failed to parse user from localStorage", error);
+                const parsedUser = JSON.parse(storedUser);
+                setIsLoggedIn(true);
+                setUser(parsedUser);
+            } catch (err) {
+                console.error("Error parsing user data:", err);
+                setIsLoggedIn(false);
                 setUser(null);
             }
         } else {
+            setIsLoggedIn(false);
             setUser(null);
         }
     };
 
     useEffect(() => {
-        checkUserAuth();
-        window.addEventListener('storage', checkUserAuth);
+        updateAuthState();
+        window.addEventListener('storage', updateAuthState);
+        window.addEventListener('authChange', updateAuthState);
+
         return () => {
-            window.removeEventListener('storage', checkUserAuth);
+            window.removeEventListener('storage', updateAuthState);
+            window.removeEventListener('authChange', updateAuthState);
         };
     }, []);
 
@@ -46,6 +53,7 @@ const Navbar = () => {
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        window.dispatchEvent(new Event('authChange'));
         setIsLoggedIn(false);
         setUser(null);
         setIsMenuOpen(false);
@@ -62,21 +70,18 @@ const Navbar = () => {
                 </span>
             </Link>
 
-            {/* Hamburger Menu for Mobile */}
             {isMobile && (
-                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="bg-transparent border-none text-white text-2xl z-1100 cursor-pointer md:hidden">
+                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="bg-transparent border-none text-white text-2xl z-[1100] cursor-pointer md:hidden">
                     {isMenuOpen ? '✕' : '☰'}
                 </button>
             )}
 
-            {/* Mobile Menu Overlay */}
             {isMobile && isMenuOpen && (
-                <div className="fixed top-0 right-0 h-screen w-64 bg-slate-900/95 backdrop-blur-md flex flex-col items-center pt-24 z-1050 transition-transform duration-300 ease-in-out transform-none overflow-y-auto">
+                <div className="fixed top-0 right-0 h-screen w-64 bg-slate-900/95 backdrop-blur-md flex flex-col items-center pt-24 z-[1050] transition-transform duration-300 ease-in-out transform-none overflow-y-auto">
                     {renderNavLinks(true)}
                 </div>
             )}
 
-            {/* Desktop Navigation */}
             {!isMobile && (
                 <div className="hidden md:flex items-center gap-4">
                     {renderNavLinks(false)}
@@ -104,9 +109,9 @@ const Navbar = () => {
                         <Link to="/faq" className={`${baseLinkClasses} ${isMobileMenu ? mobileOnlyClasses : desktopOnlyClasses}`} onClick={() => isMobileMenu && setIsMenuOpen(false)}>FAQ</Link>
                         <Link to="/profile" className={`${baseLinkClasses} ${isMobileMenu ? mobileOnlyClasses : desktopOnlyClasses}`} onClick={() => isMobileMenu && setIsMenuOpen(false)}>My Profile</Link>
                         
-                        {user && user.name && (
+                        {user && (user.name || user.username) && (
                             <span className={`text-emerald-400 text-sm font-semibold py-2 ${isMobileMenu ? mobileOnlyClasses : 'mr-1'}`}>
-                                Welcome, {user.name}
+                                Welcome, {user.name || user.username}
                             </span>
                         )}
                         <button onClick={handleLogout} className={`${baseLinkClasses} ${buttonBaseClasses} ${logoutClasses} ${isMobileMenu ? mobileOnlyClasses : desktopOnlyClasses}`}>

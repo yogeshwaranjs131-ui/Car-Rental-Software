@@ -8,11 +8,28 @@ const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-    useEffect(() => {
+    const checkUserAuth = () => {
         const token = localStorage.getItem('token');
         const storedUser = localStorage.getItem('user');
         setIsLoggedIn(!!token);
-        if (storedUser) setUser(JSON.parse(storedUser));
+        if (storedUser) {
+            try {
+                setUser(JSON.parse(storedUser));
+            } catch (error) {
+                console.error("Failed to parse user from localStorage", error);
+                setUser(null);
+            }
+        } else {
+            setUser(null);
+        }
+    };
+
+    useEffect(() => {
+        checkUserAuth();
+        window.addEventListener('storage', checkUserAuth);
+        return () => {
+            window.removeEventListener('storage', checkUserAuth);
+        };
     }, []);
 
     useEffect(() => {
@@ -32,7 +49,8 @@ const Navbar = () => {
         setIsLoggedIn(false);
         setUser(null);
         setIsMenuOpen(false);
-        navigate('/');
+        alert("Logged out successfully!");
+        navigate('/login');
     };
 
     return (
@@ -69,7 +87,7 @@ const Navbar = () => {
 
     function renderNavLinks(isMobileMenu) {
         const baseLinkClasses = "text-slate-200 no-underline text-sm font-medium px-3 py-2 rounded-md hover:bg-slate-700 hover:text-white transition-colors duration-200";
-        const mobileOnlyClasses = "w-4/5 text-center";
+        const mobileOnlyClasses = "w-4/5 text-center my-1";
         const desktopOnlyClasses = "w-auto text-left";
         const buttonBaseClasses = "border-none cursor-pointer";
         const registerClasses = "bg-blue-600 text-white hover:bg-blue-700";
@@ -85,6 +103,7 @@ const Navbar = () => {
                         <Link to="/my-bookings" className={`${baseLinkClasses} ${isMobileMenu ? mobileOnlyClasses : desktopOnlyClasses}`} onClick={() => isMobileMenu && setIsMenuOpen(false)}>My Bookings</Link>
                         <Link to="/faq" className={`${baseLinkClasses} ${isMobileMenu ? mobileOnlyClasses : desktopOnlyClasses}`} onClick={() => isMobileMenu && setIsMenuOpen(false)}>FAQ</Link>
                         <Link to="/profile" className={`${baseLinkClasses} ${isMobileMenu ? mobileOnlyClasses : desktopOnlyClasses}`} onClick={() => isMobileMenu && setIsMenuOpen(false)}>My Profile</Link>
+                        
                         {user && user.name && (
                             <span className={`text-emerald-400 text-sm font-semibold py-2 ${isMobileMenu ? mobileOnlyClasses : 'mr-1'}`}>
                                 Welcome, {user.name}

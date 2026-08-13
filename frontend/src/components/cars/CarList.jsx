@@ -14,7 +14,8 @@ const CarList = () => {
 
     const fetchCars = async () => {
         try {
-            const response = await API.get('/cars');
+            // baseURL-டன் சேர்த்து சரியாக /api/v1/cars என ரிக்வெஸ்ட் செல்லும்
+            const response = await API.get('/api/v1/cars');
             const carData = Array.isArray(response.data) 
                 ? response.data 
                 : (response.data.data || response.data.cars || []);
@@ -31,7 +32,7 @@ const CarList = () => {
         if (!window.confirm('Are you sure you want to delete this car?')) return;
 
         try {
-            await API.delete(`/cars/${id}`);
+            await API.delete(`/api/v1/cars/${id}`);
             alert('Car deleted successfully');
             setCars(cars.filter((car) => car._id !== id));
         } catch (err) {
@@ -75,7 +76,6 @@ const CarList = () => {
                         </thead>
                         <tbody>
                             {cars.map((car) => {
-                                // டேட்டாபேஸில் உள்ள 'image' அல்லது 'imageUrl' மதிப்பை நேரடியாக எடுப்பது
                                 const carImage = car.image || car.imageUrl || 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800';
 
                                 return (

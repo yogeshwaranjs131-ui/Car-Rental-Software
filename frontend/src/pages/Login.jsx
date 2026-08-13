@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios'; // axios-ஐ இறக்குமதி செய்யவும்
+import API from '../../services/api'; // <--- உன்னுடைய api.js கோப்பின் சரியான பாதையை (path) கொடுக்கவும்
 
 const Login = () => {
     const carImages = [
@@ -25,22 +25,20 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('http://localhost:5000/api/v1/auth/login', { email, password });
+            // இப்போது இது நெட்லிஃபை மற்றும் ரெண்டர் இரண்டிற்கும் சரியாக ரெண்டர் பேக்டெண்டிற்குச் செல்லும்!
+            const response = await API.post('/api/v1/auth/login', { email, password });
             const data = response.data;
             
-            if (data.success) {
+            if (data.success || response.status === 200) {
                 alert("Login Successful! Welcome to Car Rental Dashboard 🎉");
                 localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.data)); 
+                localStorage.setItem('user', JSON.stringify(data.data || data.user)); 
                 navigate('/');
             } else {
-                // axios பிழைகளைக் கையாளும் விதம் வேறு என்பதால், இந்த else பகுதி பொதுவாக அடையப்படாது.
-                // பிழைகள் catch பிளாக்கில் கையாளப்படும்.
                 alert(data.message || "Invalid Credentials! Please check your email or password.");
             }
         } catch (error) {
             console.error("Login Error:", error.response || error);
-            // சர்வரில் இருந்து வரும் பிழைச் செய்தியைக் காட்டவும்
             const errorMessage = error.response?.data?.message || "Invalid Credentials! Please check your email or password.";
             alert(errorMessage);
         }

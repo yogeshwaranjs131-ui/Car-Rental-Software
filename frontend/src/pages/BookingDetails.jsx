@@ -19,7 +19,7 @@ const BookingDetails = () => {
                         Authorization: `Bearer ${token}`
                     }
                 };
-                const response = await axios.get(`http://localhost:5000/api/bookings/${id}`, config);
+                const response = await axios.get(`https://car-rental-software.onrender.com/api/bookings/${id}`, config);
                 setBooking(response.data);
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to fetch booking details');

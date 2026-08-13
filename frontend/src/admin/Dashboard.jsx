@@ -25,7 +25,7 @@ const Dashboard = () => {
             };
 
             // அட்மின் அல்லது யூசர் டேஷ்போர்டு ஸ்டேட்டஸ் API-ஐ ஃபெட்ச் செய்ய
-            const response = await axios.get('http://localhost:5000/api/dashboard/stats', config);
+            const response = await axios.get('https://car-rental-software.onrender.com/api/dashboard/stats', config);
             setStats(response.data.data || response.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to load dashboard data.');

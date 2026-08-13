@@ -24,7 +24,7 @@ const EditCar = () => {
     useEffect(() => {
         const fetchCarDetails = async () => {
             try {
-                const response = await axios.get(`http://localhost:5000/api/cars/${id}`);
+                const response = await axios.get(`https://car-rental-software.onrender.com/api/cars/${id}`);
                 const carData = response.data.data || response.data;
                 setFormData({
                     name: carData.name || '',
@@ -63,7 +63,7 @@ const EditCar = () => {
                 }
             };
 
-            await axios.put(`http://localhost:5000/api/cars/${id}`, formData, config);
+            await axios.put(`https://car-rental-software.onrender.com/api/cars/${id}`, formData, config);
             
             alert('Car Updated Successfully!');
             navigate('/admin/dashboard'); // அப்டேட் ஆனதும் டேஷ்போர்டுக்குச் செல்ல

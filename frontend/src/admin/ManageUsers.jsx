@@ -20,7 +20,7 @@ const ManageUsers = () => {
                 }
             };
 
-            const response = await axios.get('http://localhost:5000/api/users', config);
+            const response = await axios.get('https://car-rental-software.onrender.com/api/users', config);
             setUsers(response.data.data || response.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to fetch users.');
@@ -41,7 +41,7 @@ const ManageUsers = () => {
                 }
             };
 
-            await axios.delete(`http://localhost:5000/api/users/${id}`, config);
+            await axios.delete(`https://car-rental-software.onrender.com/api/users/${id}`, config);
             
             alert('User deleted successfully');
             setUsers(users.filter((user) => user._id !== id));

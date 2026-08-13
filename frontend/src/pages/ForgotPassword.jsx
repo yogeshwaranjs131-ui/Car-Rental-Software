@@ -15,7 +15,7 @@ const ForgotPassword = () => {
         setMessage(null);
 
         try {
-            const response = await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
+            const response = await axios.post('https://car-rental-software.onrender.com/api/auth/forgot-password', { email });
             setMessage(response.data.message || 'Password reset link sent to your email.');
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to send reset link. Please try again.');

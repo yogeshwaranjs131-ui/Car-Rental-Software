@@ -294,7 +294,7 @@ frontend/.env
 
 Add:
 
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=https://car-rental-software.onrender.com/api
 
 For production:
 
@@ -343,15 +343,15 @@ MongoDB
 
 Backend URL:
 
-http://localhost:5000
+https://car-rental-software.onrender.com
 
 API URL:
 
-http://localhost:5000/api
+https://car-rental-software.onrender.com/api
 
 Frontend .env:
 
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=https://car-rental-software.onrender.com/api
 
 
 ---

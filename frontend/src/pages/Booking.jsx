@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import BookingForm from '../components/booking/BookingForm';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com';
 
 const Booking = () => {
     const { id } = useParams();

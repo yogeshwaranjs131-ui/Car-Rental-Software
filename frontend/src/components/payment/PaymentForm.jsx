@@ -26,7 +26,7 @@ const PaymentForm = ({ bookingId, amount, onSuccess }) => {
                 status: 'Completed'
             };
 
-            const response = await axios.post('http://localhost:5000/api/payments', paymentData, config);
+            const response = await axios.post('https://car-rental-software.onrender.com/api/payments', paymentData, config);
 
             if (response.data) {
                 alert('Payment successful!');

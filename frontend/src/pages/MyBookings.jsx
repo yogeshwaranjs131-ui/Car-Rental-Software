@@ -20,7 +20,7 @@ const MyBookings = () => {
                     },
                     params: { populate: 'car' } // கார் விவரங்களையும் சேர்த்து அனுப்புமாறு கேட்கவும்
                 };
-                const response = await axios.get('http://localhost:5000/api/bookings', config);             
+                const response = await axios.get('https://car-rental-software.onrender.com/api/bookings', config);             
                 
                 // பேக்கெண்ட் அனுப்பும் டேட்டா எப்படி இருந்தாலும் பாதுகாப்பாக Array-வாக மாற்றுகிறோம்
                 const rawData = response.data;
@@ -54,7 +54,7 @@ const MyBookings = () => {
                     Authorization: `Bearer ${token}`
                 }
             };
-            await axios.put(`http://localhost:5000/api/bookings/${bookingId}/cancel`, {}, config);
+            await axios.put(`https://car-rental-software.onrender.com/api/bookings/${bookingId}/cancel`, {}, config);
             
             // UI-ஐ உடனே அப்டேட் செய்தல்
             setBookings((prevBookings) =>

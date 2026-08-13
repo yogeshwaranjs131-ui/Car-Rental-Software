@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
                             Authorization: `Bearer ${token}`
                         }
                     };
-                    const response = await axios.get('http://localhost:5000/api/auth/profile', config);
+                    const response = await axios.get('https://car-rental-software.onrender.com/api/auth/profile', config);
                     setUser(response.data);
                 } catch (err) {
                     console.error('Failed to load user profile', err);

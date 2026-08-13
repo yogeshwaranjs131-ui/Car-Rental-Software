@@ -24,7 +24,7 @@ const ResetPassword = () => {
         setMessage(null);
 
         try {
-            const response = await axios.put(`http://localhost:5000/api/auth/reset-password/${token}`, { password });
+            const response = await axios.put(`https://car-rental-software.onrender.com/api/auth/reset-password/${token}`, { password });
             setMessage(response.data.message || 'Password reset successful! Redirecting to login...');
             
             setTimeout(() => {

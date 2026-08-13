@@ -320,13 +320,13 @@ npm start
 
 The backend will run at:
 
-http://localhost:5000
+https://car-rental-software.onrender.com
 
 ---
 
 🔗 API Base URL
 
-http://localhost:5000/api
+https://car-rental-software.onrender.com/api
 
 ---
 
@@ -827,15 +827,15 @@ http://localhost:5173
 
 Backend:
 
-http://localhost:5000
+https://car-rental-software.onrender.com
 
 API:
 
-http://localhost:5000/api
+https://car-rental-software.onrender.com/api
 
 Frontend API configuration should point to:
 
-VITE_API_URL=http://localhost:5000/api
+VITE_API_URL=https://car-rental-software.onrender.com/api
 
 ---
 

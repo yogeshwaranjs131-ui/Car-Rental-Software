@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const Payments = () => {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com';
 
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);

@@ -58,7 +58,7 @@ const Payment = () => {
 
             // Backend API Call to create order
             const { data } = await axios.post(
-                'http://localhost:5000/api/v1/payments/create-order',
+                'https://car-rental-software.onrender.com/api/v1/payments/create-order',
                 { bookingId, amount: totalAmount },
                 config
             );
@@ -75,7 +75,7 @@ const Payment = () => {
                 handler: async function (response) {
                     try {
                         const verificationResponse = await axios.post(
-                            'http://localhost:5000/api/v1/payments/verify-payment', 
+                            'https://car-rental-software.onrender.com/api/v1/payments/verify-payment', 
                             response, 
                             config
                         );

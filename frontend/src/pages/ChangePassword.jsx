@@ -32,7 +32,7 @@ const ChangePassword = () => {
                 }
             };
             const response = await axios.put(
-                'http://localhost:5000/api/users/change-password',
+                'https://car-rental-software.onrender.com/api/users/change-password',
                 { oldPassword, newPassword },
                 config
             );

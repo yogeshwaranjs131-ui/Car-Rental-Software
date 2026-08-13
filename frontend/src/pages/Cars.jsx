@@ -3,7 +3,7 @@ import axios from 'axios';
 import CarCard from '../components/cars/CarCard';
 import CarFilter from '../components/cars/CarFilter';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com';
 
 const Cars = () => {
     const [cars, setCars] = useState([]);

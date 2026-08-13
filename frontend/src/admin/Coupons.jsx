@@ -17,7 +17,7 @@ const Coupon = () => {
         try {
             const token = localStorage.getItem('token');
             const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-            const response = await axios.get('http://localhost:5000/api/coupons', config);
+            const response = await axios.get('https://car-rental-software.onrender.com/api/coupons', config);
             setCoupons(response.data.data || response.data);
         } catch (err) {
             console.error('Error fetching coupons:', err);
@@ -40,7 +40,7 @@ const Coupon = () => {
             };
 
             const response = await axios.post(
-                'http://localhost:5000/api/coupons/apply', 
+                'https://car-rental-software.onrender.com/api/coupons/apply', 
                 { code: couponCode }, 
                 config
             );

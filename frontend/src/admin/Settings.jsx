@@ -27,7 +27,7 @@ const Settings = () => {
                 }
             };
 
-            const response = await axios.get('http://localhost:5000/api/settings', config);
+            const response = await axios.get('https://car-rental-software.onrender.com/api/settings', config);
             const data = response.data.data || response.data;
             setSettings({
                 emailNotifications: data.emailNotifications ?? true,
@@ -65,7 +65,7 @@ const Settings = () => {
                 }
             };
 
-            await axios.put('http://localhost:5000/api/settings', settings, config);
+            await axios.put('https://car-rental-software.onrender.com/api/settings', settings, config);
             setMessage('Settings updated successfully!');
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update settings.');

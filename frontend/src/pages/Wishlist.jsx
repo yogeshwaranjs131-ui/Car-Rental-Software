@@ -16,7 +16,7 @@ const Wishlist = () => {
                         Authorization: `Bearer ${token}`
                     }
                 };
-                const response = await axios.get('http://localhost:5000/api/wishlist', config);
+                const response = await axios.get('https://car-rental-software.onrender.com/api/wishlist', config);
                 
                 // Backend-லிருந்து டேட்டா ஆப்ஜெக்ட்டாக வந்தாலும் அரேவாக மாற்றிக் கொள்ள பாதுகாப்புச் செக்
                 const data = response.data;
@@ -48,7 +48,7 @@ const Wishlist = () => {
                     Authorization: `Bearer ${token}`
                 }
             };
-            await axios.delete(`http://localhost:5000/api/wishlist/${carId}`, config);
+            await axios.delete(`https://car-rental-software.onrender.com/api/wishlist/${carId}`, config);
             
             // நீக்கிய பிறகு UI-ஐ அப்டேட் செய்தல்
             setWishlist((prevWishlist) => prevWishlist.filter((car) => car._id !== carId));

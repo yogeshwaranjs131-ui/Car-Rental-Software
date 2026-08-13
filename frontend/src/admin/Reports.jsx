@@ -25,7 +25,7 @@ const Reports = () => {
                 }
             };
 
-            const response = await axios.get('http://localhost:5000/api/reports', config);
+            const response = await axios.get('https://car-rental-software.onrender.com/api/reports', config);
             const data = response.data.data || response.data;
             setReportData({
                 totalRevenue: data.totalRevenue || 0,

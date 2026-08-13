@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/admin';
+const API_URL = 'https://car-rental-software.onrender.com/api/admin';
 
 // Helper function to get auth header
 const getAuthHeader = () => {

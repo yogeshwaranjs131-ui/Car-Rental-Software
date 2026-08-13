@@ -20,7 +20,7 @@ const Notification = () => {
                 }
             };
 
-            const response = await axios.get('http://localhost:5000/api/notifications', config);
+            const response = await axios.get('https://car-rental-software.onrender.com/api/notifications', config);
             setNotifications(response.data.data || response.data);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to fetch notifications.');
@@ -39,7 +39,7 @@ const Notification = () => {
                 }
             };
 
-            await axios.put(`http://localhost:5000/api/notifications/${id}/read`, {}, config);
+            await axios.put(`https://car-rental-software.onrender.com/api/notifications/${id}/read`, {}, config);
             
             // Update state locally
             setNotifications(

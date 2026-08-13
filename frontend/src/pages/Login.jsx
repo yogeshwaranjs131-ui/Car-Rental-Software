@@ -50,7 +50,7 @@ const Login = () => {
     };
 
     const handleGoogleLogin = () => {
-        window.location.href = 'http://localhost:5000/api/auth/google'; // உங்கள் Backend Google Auth URL
+        window.location.href = 'https://car-rental-software.onrender.com/api/auth/google'; // உங்கள் Backend Google Auth URL
     };
 
     return (

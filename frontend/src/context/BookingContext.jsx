@@ -4,7 +4,7 @@ import axios from 'axios';
 // Create Booking Context
 const BookingContext = createContext();
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://car-rental-software.onrender.com';
 
 // Booking Provider Component
 export const BookingProvider = ({ children }) => {

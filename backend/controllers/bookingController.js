@@ -1,24 +1,58 @@
+const mongoose = require('mongoose');
 const Booking = require('../models/Booking');
 const User = require('../models/User');
 const Car = require('../models/Car');
-const nodemailer = require('nodemailer');
-const axios = require('axios');
+const axios = require('axios'); // Keep axios if used elsewhere
+const transporter = require('../config/mail'); // Changed from email to mail
+
+// ============================================================
+// CONFIGURATION
+// ============================================================
+
+const GST_RATE = 18;
+
+const logoImageUrl =
+  'https://res.cloudinary.com/dfbkat3cb/image/upload/w_150,h_150,c_fill,r_max/v1786468571/logo_i6gox8.jpg';
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+const formatCurrency = (amount) => {
+  return `₹${Number(amount).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+const isValidObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id);
+};
+
+const parseBoolean = (value) => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+
+  return false;
+};
+
+// ============================================================
+// CREATE BOOKING
+// ============================================================
 
 exports.createBooking = async (req, res) => {
-  console.log("🔥 HIT CREATE BOOKING API! Body data:", req.body);
+  console.log('======================================');
+  console.log('🔥 CREATE BOOKING API HIT');
+  console.log('Body:', req.body);
+  console.log('======================================');
 
   try {
-    const { car, startDate, endDate, totalAmount, withDriver, pickupLocation, dropoffLocation, user: bodyUserId } = req.body;
-    
-    const userId = req.user?.id || bodyUserId;
-
-    if (!userId) {
-      return res.status(400).json({ success: false, error: 'User ID is required for booking.' });
-    }
-
-    // 1. Create booking in database
-    const booking = await Booking.create({
-      user: userId,
+    const {
       car,
       startDate,
       endDate,
@@ -26,238 +60,1145 @@ exports.createBooking = async (req, res) => {
       withDriver,
       pickupLocation,
       dropoffLocation,
-    });
+      user: bodyUserId,
+    } = req.body;
 
-    console.log("✅ Booking saved to database successfully! ID:", booking._id);
+    // ========================================================
+    // USER ID
+    // ========================================================
 
-    // 2. Fetch user and car info for notifications
-    const userInfo = await User.findById(userId);
-    const carInfo = await Car.findById(car);
+    const userId =
+      req.user?.id ||
+      req.user?._id ||
+      bodyUserId;
 
-    const userName = userInfo ? userInfo.name : 'Customer';
-    const userEmail = userInfo ? userInfo.email : null;
-    const userPhone = userInfo ? userInfo.phone : null;
-    const carName = carInfo ? carInfo.name : 'Car';
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID is required for booking.',
+      });
+    }
 
-    // 🚗 Cloudinary Round Logo URL (r_max ensures circle shape)
-    const logoImageUrl = "https://res.cloudinary.com/dfbkat3cb/image/upload/w_100,h_100,c_fill,r_max/v1786468571/logo_i6gox8.jpg";
+    if (!isValidObjectId(userId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid user ID.',
+      });
+    }
 
-    // 3. Send HTML Email notification with Round Logo
+    // ========================================================
+    // BASIC VALIDATION
+    // ========================================================
+
+    if (!car) {
+      return res.status(400).json({
+        success: false,
+        error: 'Car is required.',
+      });
+    }
+
+    if (!isValidObjectId(car)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid car ID.',
+      });
+    }
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Start date and end date are required.',
+      });
+    }
+
+    if (!pickupLocation) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Pickup location is required.',
+      });
+    }
+
+    if (!dropoffLocation) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Dropoff location is required.',
+      });
+    }
+
+    if (
+      totalAmount === undefined ||
+      totalAmount === null ||
+      totalAmount === ''
+    ) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Total amount is required.',
+      });
+    }
+
+    // ========================================================
+    // DATE VALIDATION
+    // ========================================================
+
+    const pickupDate = new Date(startDate);
+    const dropoffDate = new Date(endDate);
+
+    if (
+      Number.isNaN(pickupDate.getTime()) ||
+      Number.isNaN(dropoffDate.getTime())
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid booking dates.',
+      });
+    }
+
+    if (dropoffDate < pickupDate) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Dropoff date cannot be before pickup date.',
+      });
+    }
+
+    // ========================================================
+    // AMOUNT VALIDATION
+    // ========================================================
+
+    const rentalAmount = Number(totalAmount);
+
+    if (
+      !Number.isFinite(rentalAmount) ||
+      rentalAmount < 0
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid total amount.',
+      });
+    }
+
+    // ========================================================
+    // GST CALCULATION
+    // ========================================================
+
+    const gstAmount = Number(
+      (
+        (rentalAmount * GST_RATE) /
+        100
+      ).toFixed(2)
+    );
+
+    const grandTotal = Number(
+      (
+        rentalAmount +
+        gstAmount
+      ).toFixed(2)
+    );
+
+    console.log('======================================');
+    console.log('💰 PAYMENT CALCULATION');
+    console.log(
+      'Rental Amount:',
+      rentalAmount
+    );
+    console.log(
+      `GST (${GST_RATE}%):`,
+      gstAmount
+    );
+    console.log(
+      'Grand Total:',
+      grandTotal
+    );
+    console.log('======================================');
+
+    // ========================================================
+    // GET USER
+    // ========================================================
+
+    const userInfo =
+      await User.findById(userId);
+
+    if (!userInfo) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found.',
+      });
+    }
+
+    // ========================================================
+    // GET CAR
+    // ========================================================
+
+    const carInfo =
+      await Car.findById(car);
+
+    if (!carInfo) {
+      return res.status(404).json({
+        success: false,
+        error: 'Car not found.',
+      });
+    }
+
+    // ========================================================
+    // CHECK CAR AVAILABILITY
+    // ========================================================
+
+    const overlappingBooking =
+      await Booking.findOne({
+        car,
+
+        status: {
+          $in: [
+            'pending',
+            'confirmed',
+          ],
+        },
+
+        startDate: {
+          $lt: dropoffDate,
+        },
+
+        endDate: {
+          $gt: pickupDate,
+        },
+      });
+
+    if (overlappingBooking) {
+      return res.status(409).json({
+        success: false,
+        error:
+          'This car is already booked for the selected dates.',
+      });
+    }
+
+    // ========================================================
+    // DRIVER
+    // ========================================================
+
+    const driverRequired =
+      parseBoolean(withDriver);
+
+    // ========================================================
+    // CLEAN LOCATIONS
+    // ========================================================
+
+    const cleanPickupLocation =
+      String(pickupLocation).trim();
+
+    const cleanDropoffLocation =
+      String(dropoffLocation).trim();
+
+    if (!cleanPickupLocation) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Pickup location cannot be empty.',
+      });
+    }
+
+    if (!cleanDropoffLocation) {
+      return res.status(400).json({
+        success: false,
+        error:
+          'Dropoff location cannot be empty.',
+      });
+    }
+
+    // ========================================================
+    // CREATE BOOKING
+    // ========================================================
+
+    const booking =
+      await Booking.create({
+        user: userId,
+
+        car,
+
+        startDate: pickupDate,
+
+        endDate: dropoffDate,
+
+        withDriver:
+          driverRequired,
+
+        pickupLocation:
+          cleanPickupLocation,
+
+        dropoffLocation:
+          cleanDropoffLocation,
+
+        baseAmount:
+          rentalAmount,
+
+        gstPercentage:
+          GST_RATE,
+
+        gstAmount:
+          gstAmount,
+
+        totalAmount:
+          grandTotal,
+
+        paymentStatus:
+          'pending',
+
+        paymentMethod:
+          'razorpay',
+
+        status:
+          'pending',
+
+        confirmationSent:
+          false,
+
+        emailSent:
+          false,
+
+        smsSent:
+          false,
+
+        whatsappSent:
+          false,
+      });
+
+    console.log(
+      '✅ BOOKING CREATED:',
+      booking._id.toString()
+    );
+
+    // ========================================================
+    // USER DETAILS
+    // ========================================================
+
+    const userName =
+      userInfo.name ||
+      'Customer';
+
+    const userEmail =
+      userInfo.email ||
+      null;
+
+    const userPhone =
+      userInfo.phone ||
+      null;
+
+    // ========================================================
+    // CAR DETAILS
+    // ========================================================
+
+    const carName =
+      carInfo.name ||
+      carInfo.carName ||
+      'Car';
+
+    const driverText =
+      driverRequired
+        ? 'Yes'
+        : 'No';
+
+    // ========================================================
+    // EMAIL
+    // ========================================================
+
+    let emailSent = false;
+
     if (userEmail) {
       try {
-        const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST || process.env.EMAIL_HOST,
-          port: process.env.SMTP_PORT || process.env.EMAIL_PORT,
-          auth: {
-            user: process.env.SMTP_EMAIL || process.env.SMTP_USER || process.env.EMAIL_USER,
-            pass: process.env.SMTP_PASSWORD || process.env.EMAIL_PASS,
-          },
-        });
+        console.log(
+          '📧 Preparing email...'
+        );
+
+        // ----------------------------------------------------
+        // EMAIL HTML
+        // ----------------------------------------------------
 
         const htmlTemplate = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #f9f9f9;">
-            <div style="text-align: center; background-color: #2563eb; color: #ffffff; padding: 20px; border-radius: 6px 6px 0 0;">
-              
-              <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 10px auto;">
-                <tr>
-                  <td align="center" style="border-radius: 50%; overflow: hidden; width: 75px; height: 75px; background: #ffffff; border: 3px solid #ffffff;">
-                    <img src="${logoImageUrl}" alt="Car Rental Logo" width="75" height="75" style="display: block; width: 75px; height: 75px; object-fit: cover; border-radius: 50%; border: 0;" />
-                  </td>
-                </tr>
-              </table>
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Car Rental Booking Confirmation</title>
+          </head>
+          <body style="margin: 0; padding: 0; background-color: #f4f7f6; font-family: Arial, sans-serif; color: #333;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f7f6;">
+              <tr>
+                <td align="center" style="padding: 20px;">
+                  <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+                    
+                    <!-- Header -->
+                    <tr>
+                      <td align="center" style="background-color: #2c3e50; padding: 30px 20px;">
+                        <img src="${logoImageUrl}" alt="Car Rental Logo" width="80" height="80" style="display: block; border-radius: 50%; border: 3px solid #ffffff;">
+                        <h1 style="margin: 15px 0 0; color: #ffffff; font-size: 26px; font-weight: bold;">Booking Confirmed!</h1>
+                        <p style="margin: 5px 0 0; color: #bdc3c7; font-size: 15px;">Your journey is just around the corner.</p>
+                      </td>
+                    </tr>
 
-              <h2 style="margin: 0; font-size: 22px;">🚗 Car Rental Booking Confirmed!</h2>
-            </div>
-            
-            <div style="padding: 20px; background-color: #ffffff;">
-              <p style="font-size: 16px; color: #333333;">Hello <b>${userName}</b>,</p>
-              <p style="font-size: 15px; color: #555555;">Thank you for choosing us! Your car rental booking has been successfully confirmed.</p>
-              
-              <div style="background-color: #f1f5f9; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                <p style="margin: 8px 0; color: #333333;"><b>Booking ID:</b> ${booking._id}</p>
-                <p style="margin: 8px 0; color: #333333;"><b>Car Name:</b> ${carName}</p>
-                <p style="margin: 8px 0; color: #333333;"><b>Pickup Date:</b> ${startDate}</p>
-                <p style="margin: 8px 0; color: #333333;"><b>Dropoff Date:</b> ${endDate}</p>
-                <p style="margin: 8px 0; color: #333333;"><b>Pickup Location:</b> ${pickupLocation || 'N/A'}</p>
-                <p style="margin: 8px 0; color: #333333;"><b>Dropoff Location:</b> ${dropoffLocation || 'N/A'}</p>
-                <hr style="border: 0; border-top: 1px solid #cbd5e1; margin: 10px 0;">
-                <p style="margin: 8px 0; font-size: 16px; color: #16a34a;"><b>Total Amount: Rs. ${totalAmount}</b></p>
-              </div>
-              
-              <p style="font-size: 14px; color: #666666;">If you have any questions, feel free to contact our support team.</p>
-              <p style="font-size: 15px; color: #333333; margin-top: 20px;">Best Regards,<br><b>Car Rental Team</b></p>
-            </div>
-            <div style="text-align: center; padding: 10px; font-size: 12px; color: #999999; border-top: 1px solid #e0e0e0;">
-              &copy; 2026 Car Rental Software. All rights reserved.
-            </div>
-          </div>
-        `;
+                    <!-- Content -->
+                    <tr>
+                      <td style="padding: 35px 30px;">
+                        <p style="font-size: 18px; color: #2c3e50; margin: 0 0 20px;">Hello <strong>${userName}</strong>,</p>
+                        <p style="font-size: 16px; line-height: 1.6; color: #555; margin: 0 0 25px;">
+                          Thank you for choosing our service! We're excited to confirm your car rental booking. Below are the details of your reservation.
+                        </p>
+
+                        <!-- View Booking Button -->
+                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                          <tr>
+                            <td align="center" style="padding: 10px 0 30px;">
+                              <a href="${process.env.FRONTEND_URL}/bookings/${booking._id}" target="_blank" style="background-color: #3498db; color: #ffffff; padding: 14px 25px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; display: inline-block;">
+                                View Your Booking
+                              </a>
+                            </td>
+                          </tr>
+                        </table>
+
+                        <!-- Booking Summary -->
+                        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ecf0f1; border-radius: 8px; padding: 20px;">
+                          <tr>
+                            <td style="padding-bottom: 15px; border-bottom: 1px solid #dde4e6;">
+                              <p style="margin: 0; color: #7f8c8d; font-size: 14px;">Booking ID</p>
+                              <p style="margin: 5px 0 0; color: #2c3e50; font-size: 16px; font-weight: bold; word-break: break-all;">${booking._id}</p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding-top: 15px;">
+                              <p style="margin: 0; color: #7f8c8d; font-size: 14px;">Car</p>
+                              <p style="margin: 5px 0 0; color: #2c3e50; font-size: 16px; font-weight: bold;">${carName}</p>
+                            </td>
+                          </tr>
+                        </table>
+
+                        <!-- Date & Location Details -->
+                        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 25px;">
+                          <tr>
+                            <td width="50%" valign="top" style="padding-right: 10px;">
+                              <h3 style="font-size: 16px; color: #34495e; margin: 0 0 10px;">Pickup</h3>
+                              <p style="margin: 0; font-size: 15px; color: #555;">${pickupDate.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                              <p style="margin: 5px 0 0; font-size: 14px; color: #7f8c8d;">${cleanPickupLocation}</p>
+                            </td>
+                            <td width="50%" valign="top" style="padding-left: 10px; border-left: 2px solid #ecf0f1;">
+                              <h3 style="font-size: 16px; color: #34495e; margin: 0 0 10px;">Drop-off</h3>
+                              <p style="margin: 0; font-size: 15px; color: #555;">${dropoffDate.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                              <p style="margin: 5px 0 0; font-size: 14px; color: #7f8c8d;">${cleanDropoffLocation}</p>
+                            </td>
+                          </tr>
+                        </table>
+
+                        <!-- Payment Summary -->
+                        <h2 style="font-size: 20px; color: #34495e; margin: 35px 0 15px; border-top: 1px solid #ecf0f1; padding-top: 25px;">Payment Summary</h2>
+                        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                          <tr>
+                            <td style="padding: 8px 0; font-size: 15px; color: #555;">Rental Amount</td>
+                            <td align="right" style="padding: 8px 0; font-size: 15px; color: #555;">${formatCurrency(rentalAmount)}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 8px 0; font-size: 15px; color: #555;">GST (${GST_RATE}%)</td>
+                            <td align="right" style="padding: 8px 0; font-size: 15px; color: #555;">${formatCurrency(gstAmount)}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 15px 0 0; border-top: 2px solid #ecf0f1; font-size: 18px; font-weight: bold; color: #2c3e50;">Grand Total</td>
+                            <td align="right" style="padding: 15px 0 0; border-top: 2px solid #ecf0f1; font-size: 20px; font-weight: bold; color: #27ae60;">${formatCurrency(grandTotal)}</td>
+                          </tr>
+                        </table>
+
+                        <!-- Status -->
+                        <div style="margin-top: 30px; padding: 15px; background-color: #fdf8e1; border: 1px solid #fce8a3; border-radius: 8px; text-align: center;">
+                          <p style="margin: 0; font-size: 15px; color: #8a6d3b;">Payment Status: <strong style="color: #c09853;">Pending</strong></p>
+                        </div>
+
+                        <p style="margin: 30px 0 0; font-size: 14px; line-height: 1.6; color: #7f8c8d; text-align: center;">
+                          If you have any questions, feel free to contact our support team. We're here to help 24/7.
+                        </p>
+                      </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                      <td align="center" style="background-color: #ecf0f1; padding: 25px 20px;">
+                        <p style="margin: 0; color: #7f8c8d; font-size: 13px;">© ${new Date().getFullYear()} Car Rental Software. All Rights Reserved.</p>
+                        <p style="margin: 5px 0 0; color: #95a5a6; font-size: 12px;">
+                          123 Rental Street, Car City, India
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
+`;
+
+        // ----------------------------------------------------
+        // SEND EMAIL
+        // ----------------------------------------------------
 
         await transporter.sendMail({
-          from: `"Car Rental Support" <${process.env.SMTP_EMAIL || process.env.SMTP_USER || process.env.EMAIL_USER}>`,
-          to: userEmail,
-          subject: '🚗 Car Booking Confirmed! - Car Rental Software',
-          html: htmlTemplate,
+          from:
+            `"Car Rental Support" <${process.env.SMTP_SENDER_EMAIL}>`,
+
+          to:
+            userEmail,
+
+          subject:
+            '🚗 Car Rental Booking Confirmation',
+
+          html:
+            htmlTemplate,
         });
-        
-        console.log("✅ [Email Notification Sent Successfully] with Round Logo to:", userEmail);
-      } catch (emailErr) {
-        console.error("❌ [Email Sending Failed]:", emailErr.message);
+
+        emailSent = true;
+
+        console.log(
+          '✅ EMAIL SENT:',
+          userEmail
+        );
+
+      } catch (emailError) {
+        console.error(
+          '❌ EMAIL FAILED:',
+          emailError
+        );
       }
+
     } else {
-      console.log("⚠️ User email not found, skipping email notification.");
+
+      console.log(
+        '⚠️ User email not available.'
+      );
+
     }
 
-    // 4. Send SMS notification using Fast2SMS
-    if (userPhone && process.env.FAST2SMS_API_KEY) {
+    // ========================================================
+    // SMS - FAST2SMS
+    // ========================================================
+
+    let smsSent = false;
+
+    if (
+      userPhone &&
+      process.env.FAST2SMS_API_KEY
+    ) {
+
       try {
-        const cleanPhoneNumber = userPhone.replace(/^\+91/, '').trim();
-        const smsMessage = `Dear ${userName}, your Car Rental booking for ${carName} (ID: ${booking._id}) is confirmed! Total: Rs.${totalAmount}. Thanks!`;
 
-        await axios.post('https://www.fast2sms.com/dev/bulkV2', {
-          route: 'q',
-          message: smsMessage,
-          language: 'english',
-          flash: 0,
-          numbers: cleanPhoneNumber,
-        }, {
-          headers: {
-            'authorization': process.env.FAST2SMS_API_KEY,
-            'Content-Type': 'application/json'
-          }
-        });
-        console.log("✅ [SMS Sent Successfully] to:", cleanPhoneNumber);
-      } catch (smsErr) {
-        console.error("❌ [SMS Sending Failed]:", smsErr.response?.data || smsErr.message);
-      }
-    } else {
-      console.log("⚠️ User phone or Fast2SMS API key missing, skipping SMS.");
-    }
+        const cleanPhoneNumber =
+          String(userPhone)
+            .replace(/\D/g, '')
+            .slice(-10);
 
-    // 5. Send WhatsApp notification with Round Logo Image
-    const whatsappInstanceId = process.env.WHATSAPP_INSTANCE_ID || process.env.ULTRAMSG_INSTANCE_ID;
-    const whatsappToken = process.env.WHATSAPP_TOKEN || process.env.ULTRAMSG_TOKEN;
+        if (
+          cleanPhoneNumber.length === 10
+        ) {
 
-    if (userPhone && whatsappInstanceId && whatsappToken) {
-      try {
-        const cleanWhatsAppNumber = userPhone.startsWith('+') ? userPhone.replace('+', '') : `91${userPhone.replace(/^\+91/, '').trim()}`;
-        
-        const whatsappCaption = 
-`🚗 *CAR RENTAL BOOKING CONFIRMED!* 🚗
+          const smsMessage =
+            `Dear ${userName}, your Car Rental booking ` +
+            `has been created. Booking ID: ${booking._id}. ` +
+            `Total: Rs.${grandTotal}. Thank you!`;
 
-Hello *${userName}*,
-Thank you for choosing us! Your booking has been successfully confirmed.
+          await axios.post(
+            'https://www.fast2sms.com/dev/bulkV2',
 
-📋 *Booking Details:*
-• *Booking ID:* ${booking._id}
-• *Car Name:* ${carName}
-• *Pickup Date:* ${startDate}
-• *Dropoff Date:* ${endDate}
-• *Pickup Location:* ${pickupLocation || 'N/A'}
-• *Dropoff Location:* ${dropoffLocation || 'N/A'}
+            {
+              route: 'q',
 
-💰 *Total Amount: Rs. ${totalAmount}*
+              message:
+                smsMessage,
 
-If you have any questions, feel free to contact our support team.
+              language:
+                'english',
 
-Best Regards,
-*Car Rental Team*`;
+              flash:
+                0,
 
-        const url = `https://api.ultramsg.com/${whatsappInstanceId}/messages/image`;
+              numbers:
+                cleanPhoneNumber,
+            },
 
-        const response = await axios.post(url, {
-          token: whatsappToken,
-          to: cleanWhatsAppNumber,
-          image: logoImageUrl,
-          caption: whatsappCaption
-        }, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (response.data && (response.data.sent || response.data.id)) {
-          console.log("✅ [WhatsApp Image Sent Successfully] with Round Logo to:", cleanWhatsAppNumber);
+            {
+              headers: {
+                authorization:
+                  process.env.FAST2SMS_API_KEY,
+
+                'Content-Type':
+                  'application/json',
+              },
+            }
+          );
+
+          smsSent = true;
+
+          console.log(
+            '✅ SMS SENT:',
+            cleanPhoneNumber
+          );
+
         } else {
-          console.error("❌ [UltraMsg Response Error]:", response.data);
+
+          console.log(
+            '⚠️ Invalid phone number for SMS.'
+          );
+
         }
 
-      } catch (waErr) {
-        console.error("❌ [WhatsApp Sending Failed]:", waErr.response?.data || waErr.message);
+      } catch (smsError) {
+
+        console.error(
+          '❌ SMS FAILED:',
+          smsError.response?.data ||
+          smsError.message
+        );
+
       }
+
     } else {
-      console.log("⚠️ WhatsApp credentials or phone number missing, skipping WhatsApp.");
+
+      console.log(
+        '⚠️ FAST2SMS API key or phone number missing.'
+      );
+
     }
 
-    res.status(201).json({
-      success: true,
-      message: 'Booking initiated successfully! Notifications triggered.',
-      bookingId: booking._id,
-      amount: booking.totalAmount
-    });
+    // ========================================================
+    // WHATSAPP - ULTRAMSG
+    // ========================================================
 
-  } catch (error) {
-    console.error("❌ Booking Controller Error:", error);
-    res.status(400).json({ success: false, error: error.message });
-  }
-};
+    let whatsappSent = false;
 
-exports.getBookings = async (req, res) => {
-  try {
-    const bookings = await Booking.find()
-      .populate('car')
-      .populate('user', 'name email phone');
+    const whatsappInstanceId =
+      process.env.WHATSAPP_INSTANCE_ID ||
+      process.env.ULTRAMSG_INSTANCE_ID;
 
-    res.status(200).json({
-      success: true,
-      count: bookings.length,
-      data: bookings
-    });
-  } catch (error) {
-    console.error("Get Bookings Error:", error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
+    const whatsappToken =
+      process.env.WHATSAPP_TOKEN ||
+      process.env.ULTRAMSG_TOKEN;
 
-exports.getBookingById = async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id)
-      .populate('car')
-      .populate('user', 'name email phone');
+    if (
+      userPhone &&
+      whatsappInstanceId &&
+      whatsappToken
+    ) {
 
-    if (!booking) {
-      return res.status(404).json({ success: false, error: 'Booking not found.' });
+      try {
+
+        let whatsappNumber =
+          String(userPhone)
+            .replace(/\D/g, '');
+
+        // Indian 10 digit number
+        if (
+          whatsappNumber.length === 10
+        ) {
+          whatsappNumber =
+            `91${whatsappNumber}`;
+        }
+
+        // Already has India country code
+        if (
+          whatsappNumber.length === 12 &&
+          whatsappNumber.startsWith('91')
+        ) {
+          // Keep as it is
+        }
+
+        if (
+          whatsappNumber.length < 12
+        ) {
+
+          console.log(
+            '⚠️ Invalid WhatsApp number.'
+          );
+
+        } else {
+
+          const whatsappMessage = `
+🚗 *CAR RENTAL BOOKING*
+
+Hello *${userName}* 👋
+
+Your booking has been created successfully.
+
+📋 *BOOKING DETAILS*
+
+• Booking ID: ${booking._id}
+• Car: ${carName}
+• Pickup Date: ${pickupDate.toLocaleDateString('en-IN')}
+• Dropoff Date: ${dropoffDate.toLocaleDateString('en-IN')}
+• Pickup: ${cleanPickupLocation}
+• Dropoff: ${cleanDropoffLocation}
+• Driver: ${driverText}
+
+💰 *PAYMENT SUMMARY*
+
+• Rental Amount: ${formatCurrency(rentalAmount)}
+• GST (${GST_RATE}%): ${formatCurrency(gstAmount)}
+• *Grand Total: ${formatCurrency(grandTotal)}*
+
+💳 Payment Status: Pending
+
+Thank you for choosing Car Rental Software.
+
+Best Regards,
+*Car Rental Team*
+`.trim();
+
+          const whatsappUrl =
+            `https://api.ultramsg.com/${whatsappInstanceId}/messages/chat`;
+
+          const response =
+            await axios.post(
+              whatsappUrl,
+
+              {
+                token:
+                  whatsappToken,
+
+                to:
+                  whatsappNumber,
+
+                body:
+                  whatsappMessage,
+              },
+
+              {
+                headers: {
+                  'Content-Type':
+                    'application/json',
+                },
+              }
+            );
+
+          if (
+            response.data &&
+            (
+              response.data.sent ||
+              response.data.id
+            )
+          ) {
+
+            whatsappSent = true;
+
+            console.log(
+              '✅ WHATSAPP SENT:',
+              whatsappNumber
+            );
+
+          } else {
+
+            console.error(
+              '❌ WHATSAPP RESPONSE:',
+              response.data
+            );
+
+          }
+        }
+
+      } catch (whatsappError) {
+
+        console.error(
+          '❌ WHATSAPP FAILED:',
+          whatsappError.response?.data ||
+          whatsappError.message
+        );
+
+      }
+
+    } else {
+
+      console.log(
+        '⚠️ WhatsApp credentials or phone number missing.'
+      );
+
     }
 
-    res.status(200).json({
-      success: true,
-      data: booking
-    });
-  } catch (error) {
-    console.error("Get Booking By ID Error:", error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-};
+    // ========================================================
+    // UPDATE NOTIFICATION STATUS
+    // ========================================================
 
-exports.cancelBooking = async (req, res) => {
-  try {
-    const bookingId = req.params.id;
+    booking.emailSent =
+      emailSent;
 
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      return res.status(404).json({ success: false, error: 'Booking not found.' });
-    }
+    booking.smsSent =
+      smsSent;
 
-    booking.status = 'cancelled';
+    booking.whatsappSent =
+      whatsappSent;
+
+    booking.confirmationSent =
+      emailSent ||
+      smsSent ||
+      whatsappSent;
+
     await booking.save();
 
-    res.status(200).json({
-      success: true,
-      message: 'Booking cancelled successfully.',
-      data: booking
+    // ========================================================
+    // FINAL RESPONSE
+    // ========================================================
+
+    return res.status(201).json({
+
+      success:
+        true,
+
+      message:
+        'Booking created successfully.',
+
+      bookingId:
+        booking._id,
+
+      payment: {
+
+        rentalAmount:
+          rentalAmount,
+
+        gstRate:
+          GST_RATE,
+
+        gstAmount:
+          gstAmount,
+
+        grandTotal:
+          grandTotal,
+
+        paymentStatus:
+          booking.paymentStatus,
+
+      },
+
+      notifications: {
+
+        emailSent:
+          emailSent,
+
+        smsSent:
+          smsSent,
+
+        whatsappSent:
+          whatsappSent,
+
+      },
+
+      data:
+        booking,
+
     });
+
   } catch (error) {
-    console.error("Cancel Booking Error Details:", error);
-    res.status(500).json({ success: false, error: error.message });
+
+    console.error(
+      '❌ CREATE BOOKING ERROR:',
+      error.message
+    );
+
+    return res.status(500).json({
+
+      success:
+        false,
+
+      error:
+        error.message,
+
+    });
+
+  }
+};
+
+// ============================================================
+// GET ALL BOOKINGS
+// ============================================================
+
+exports.getBookings = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const bookings =
+      await Booking.find()
+
+        .populate('car')
+
+        .populate(
+          'user',
+          'name email phone'
+        )
+
+        .sort({
+          createdAt: -1,
+        });
+
+    return res.status(200).json({
+
+      success:
+        true,
+
+      count:
+        bookings.length,
+
+      data:
+        bookings,
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      '❌ GET BOOKINGS ERROR:',
+      error
+    );
+
+    return res.status(500).json({
+
+      success:
+        false,
+
+      error:
+        error.message,
+
+    });
+
+  }
+};
+
+// ============================================================
+// GET BOOKING BY ID
+// ============================================================
+
+exports.getBookingById = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const bookingId =
+      req.params.id;
+
+    if (
+      !isValidObjectId(
+        bookingId
+      )
+    ) {
+
+      return res.status(400).json({
+
+        success:
+          false,
+
+        error:
+          'Invalid booking ID.',
+
+      });
+
+    }
+
+    const booking =
+      await Booking.findById(
+        bookingId
+      )
+
+        .populate('car')
+
+        .populate(
+          'user',
+          'name email phone'
+        );
+
+    if (!booking) {
+
+      return res.status(404).json({
+
+        success:
+          false,
+
+        error:
+          'Booking not found.',
+
+      });
+
+    }
+
+    return res.status(200).json({
+
+      success:
+        true,
+
+      data:
+        booking,
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      '❌ GET BOOKING BY ID ERROR:',
+      error
+    );
+
+    return res.status(500).json({
+
+      success:
+        false,
+
+      error:
+        error.message,
+
+    });
+
+  }
+};
+
+// ============================================================
+// CANCEL BOOKING
+// ============================================================
+
+exports.cancelBooking = async (
+  req,
+  res
+) => {
+
+  try {
+
+    const bookingId =
+      req.params.id;
+
+    // ========================================================
+    // ID VALIDATION
+    // ========================================================
+
+    if (
+      !isValidObjectId(
+        bookingId
+      )
+    ) {
+
+      return res.status(400).json({
+
+        success:
+          false,
+
+        error:
+          'Invalid booking ID.',
+
+      });
+
+    }
+
+    // ========================================================
+    // FIND BOOKING
+    // ========================================================
+
+    const booking =
+      await Booking.findById(
+        bookingId
+      );
+
+    if (!booking) {
+
+      return res.status(404).json({
+
+        success:
+          false,
+
+        error:
+          'Booking not found.',
+
+      });
+
+    }
+
+    // ========================================================
+    // ALREADY CANCELLED
+    // ========================================================
+
+    if (
+      booking.status ===
+      'cancelled'
+    ) {
+
+      return res.status(400).json({
+
+        success:
+          false,
+
+        error:
+          'Booking is already cancelled.',
+
+      });
+
+    }
+
+    // ========================================================
+    // COMPLETED BOOKING
+    // ========================================================
+
+    if (
+      booking.status ===
+      'completed'
+    ) {
+
+      return res.status(400).json({
+
+        success:
+          false,
+
+        error:
+          'Completed booking cannot be cancelled.',
+
+      });
+
+    }
+
+    // ========================================================
+    // CANCEL
+    // ========================================================
+
+    booking.status =
+      'cancelled';
+
+    await booking.save();
+
+    console.log(
+      '✅ BOOKING CANCELLED:',
+      booking._id
+    );
+
+    return res.status(200).json({
+
+      success:
+        true,
+
+      message:
+        'Booking cancelled successfully.',
+
+      data:
+        booking,
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      '❌ CANCEL BOOKING ERROR:',
+      error
+    );
+
+    return res.status(500).json({
+
+      success:
+        false,
+
+      error:
+        error.message,
+
+    });
+
   }
 };

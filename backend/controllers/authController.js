@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
+const transporter = require('../config/mail'); // 👈 ஏற்கனவே உள்ள transporter-ஐ import செய்யவும்
 const axios = require('axios');
 
 // Generate JWT Token
@@ -79,20 +79,10 @@ const registerUser = async (req, res) => {
             }
 
             // 📧 B. Gmail SMTP (Nodemailer) மூலம் லோகோ படத்துடன் கூடிய ஈமெயில் அனுப்புவது
-            if (email && process.env.SMTP_EMAIL) {
-                try {
-                    const transporter = nodemailer.createTransport({
-                        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-                        port: Number(process.env.SMTP_PORT) || 587,
-                        secure: false,
-                        auth: {
-                            user: process.env.SMTP_EMAIL,
-                            pass: process.env.SMTP_PASSWORD,
-                        },
-                    });
-
-                    await transporter.sendMail({
-                        from: `"Car Rental Support" <${process.env.FROM_EMAIL || process.env.SMTP_EMAIL}>`,
+            if (email && process.env.SMTP_USER) {
+                try { 
+                    await transporter.sendMail({ 
+                        from: `"Car Rental Support" <${process.env.SMTP_SENDER_EMAIL}>`,
                         to: email,
                         subject: 'Your Registration OTP - Car Rental Software',
                         html: `
@@ -221,16 +211,10 @@ const sendOTP = async (req, res) => {
         }
 
         // Email with Logo
-        if (email && process.env.SMTP_EMAIL) {
+        if (email && process.env.SMTP_USER) {
             try {
-                const transporter = nodemailer.createTransport({
-                    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-                    port: Number(process.env.SMTP_PORT) || 587,
-                    secure: false,
-                    auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASSWORD },
-                });
-                await transporter.sendMail({
-                    from: `"Car Rental Support" <${process.env.FROM_EMAIL || process.env.SMTP_EMAIL}>`,
+                await transporter.sendMail({ 
+                    from: `"Car Rental Support" <${process.env.SMTP_SENDER_EMAIL}>`,
                     to: email,
                     subject: 'Verification OTP',
                     html: `

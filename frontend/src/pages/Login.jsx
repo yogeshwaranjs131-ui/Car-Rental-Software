@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import API from '../services/api'; // உங்கள் API சர்வீஸ் பாதைக்கு ஏற்ப மாற்றிக் கொள்ளவும்
+import API from '../services/api';
 
 const backgroundCars = [
     "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1920&q=80",
@@ -15,7 +15,14 @@ const Login = () => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const navigate = useNavigate();
 
-    // பேக்ரவுண்ட் கார் படங்களை ஸ்லைடு செய்ய (Background Carousel)
+    // லாகின் பக்கத்திற்கு வரும்போதே பழைய செஷன் / லோக்கல் ஸ்டோரேஜ் கிளியர் செய்யப்படும்
+    useEffect(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.dispatchEvent(new Event('authChange'));
+    }, []);
+
+    // பேக்ரவுண்ட் கார் படங்களை ஸ்லைடு செய்ய
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentImageIndex((prevIndex) => 
@@ -31,13 +38,18 @@ const Login = () => {
             const response = await API.post('/api/auth/login', { email, password });
             const data = response.data;
             
+            console.log("FULL API RESPONSE:", data); // கன்சோலில் டேட்டாவைச் சரிபார்க்க
+
             if (data.success || response.status === 200) {
                 alert("Login successful! 🎉");
                 localStorage.setItem('token', data.token);
-                if (data.user) {
-                    localStorage.setItem('user', JSON.stringify(data.user));
+                
+                // பாகேண்டில் யூசர் டேட்டா எந்த கீ-யில் (Key) வந்தாலும் அதைச் சேமிக்க
+                const userData = data.user || data.existingUser || data.result || data.data;
+                if (userData) {
+                    localStorage.setItem('user', JSON.stringify(userData));
                 }
-                // Navbar-ல் லாகின் ஸ்டேட் உடனே மாற ஈவென்ட் அனுப்புகிறோம்
+                
                 window.dispatchEvent(new Event('authChange'));
                 navigate('/');
             } else {
@@ -50,12 +62,11 @@ const Login = () => {
     };
 
     const handleGoogleLogin = () => {
-        window.location.href = 'https://car-rental-software.onrender.com/api/auth/google'; // உங்கள் Backend Google Auth URL
+        window.location.href = 'https://car-rental-software.onrender.com/api/auth/google';
     };
 
     return (
         <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden font-sans">
-            {/* Background Images with Animation */}
             {backgroundCars.map((image, index) => (
                 <div
                     key={index}
@@ -69,17 +80,14 @@ const Login = () => {
                 />
             ))}
 
-            {/* Dark Overlay */}
             <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" />
 
-            {/* Login Card */}
             <div className="relative z-10 max-w-md w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-2xl text-white">
                 <div className="text-center mb-6">
                     <h2 className="text-3xl font-extrabold tracking-wide">Welcome Back</h2>
                     <p className="text-sm text-gray-300 mt-1">Login to manage your car rentals</p>
                 </div>
 
-                {/* Google Login Button */}
                 <button 
                     onClick={handleGoogleLogin}
                     className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 text-slate-800 font-semibold py-2.5 px-4 rounded-xl transition duration-200 shadow-md mb-5 cursor-pointer"
@@ -93,14 +101,12 @@ const Login = () => {
                     Continue with Google
                 </button>
 
-                {/* Divider */}
                 <div className="flex items-center my-4">
                     <div className="grow border-t border-white/20"></div>
                     <span className="px-3 text-xs text-gray-300 uppercase tracking-wider">Or with email</span>
                     <div className="grow border-t border-white/20"></div>
                 </div>
 
-                {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="text-gray-200 text-sm block mb-1">Email</label>
@@ -129,7 +135,6 @@ const Login = () => {
                     </button>
                 </form>
 
-                {/* Register Link */}
                 <p className="text-gray-300 text-sm text-center mt-6">
                     Don't have an account? <Link to="/register" className="text-blue-400 hover:underline font-medium">Register here</Link>
                 </p>

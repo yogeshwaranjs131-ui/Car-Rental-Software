@@ -22,7 +22,6 @@ const PaymentInvoice = () => {
             }
 
             try {
-                // 👈 இங்கே /api/v1/bookings என மாற்றப்பட்டுள்ளது
                 const response = await axios.get(`${API_BASE_URL}/api/v1/bookings/${bookingId}`);
                 if (response.data && response.data.success) {
                     setBooking(response.data.data);
@@ -45,6 +44,11 @@ const PaymentInvoice = () => {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         })}`;
+    };
+
+    // 📥 பிரிண்ட் டூல்பாக்ஸ் அல்லது PDF ஆக சேமிக்க
+    const handleDownloadPDF = () => {
+        window.print();
     };
 
     if (loading) {
@@ -126,13 +130,13 @@ const PaymentInvoice = () => {
                         </tbody>
                     </table>
 
-                    {/* Print Button */}
+                    {/* Download PDF Button */}
                     <div style={{ textAlign: 'center' }}>
                         <button 
-                            onClick={() => window.print()} 
+                            onClick={handleDownloadPDF} 
                             style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '12px 25px', borderRadius: '6px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(37,99,235,0.3)' }}
                         >
-                            Print / Download Invoice
+                            📥 Download Invoice as PDF
                         </button>
                     </div>
                 </div>

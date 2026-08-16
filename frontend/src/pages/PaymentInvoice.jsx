@@ -22,7 +22,8 @@ const PaymentInvoice = () => {
             }
 
             try {
-                const response = await axios.get(`${API_BASE_URL}/api/bookings/${bookingId}`);
+                // 👈 இங்கே /api/v1/bookings என மாற்றப்பட்டுள்ளது
+                const response = await axios.get(`${API_BASE_URL}/api/v1/bookings/${bookingId}`);
                 if (response.data && response.data.success) {
                     setBooking(response.data.data);
                 } else {

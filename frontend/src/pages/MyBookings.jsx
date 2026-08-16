@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import Modal from '../components/common/Modal'; // மோடல் காம்போனென்டை இறக்குமதி செய்யவும்
+import Modal from '../components/common/Modal';
 
 const MyBookings = () => {
     const [bookings, setBookings] = useState([]);
@@ -9,43 +9,44 @@ const MyBookings = () => {
     const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [bookingToCancel, setBookingToCancel] = useState(null);
+    const [modalActionType, setModalActionType] = useState('cancel'); // 'cancel' அல்லது 'delete' எனப் பிரிக்க
+
+    const fetchUserBookings = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const config = {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+                params: { populate: 'car' }
+            };
+            const response = await axios.get('https://car-rental-software.onrender.com/api/bookings', config);            
+            
+            const rawData = response.data;
+            const bookingsData = Array.isArray(rawData) 
+                ? rawData 
+                : (Array.isArray(rawData?.data) ? rawData.data : []);
+            
+            setBookings(bookingsData);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to fetch your bookings');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchUserBookings = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const config = {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    },
-                    params: { populate: 'car' } // கார் விவரங்களையும் சேர்த்து அனுப்புமாறு கேட்கவும்
-                };
-                const response = await axios.get('https://car-rental-software.onrender.com/api/bookings', config);             
-                
-                // பேக்கெண்ட் அனுப்பும் டேட்டா எப்படி இருந்தாலும் பாதுகாப்பாக Array-வாக மாற்றுகிறோம்
-                const rawData = response.data;
-                const bookingsData = Array.isArray(rawData) 
-                    ? rawData 
-                    : (Array.isArray(rawData?.data) ? rawData.data : []);
-                
-                setBookings(bookingsData);
-            } catch (err) {
-                setError(err.response?.data?.message || 'Failed to fetch your bookings');
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchUserBookings();
     }, []);
 
-    const openCancelModal = (bookingId) => {
+    const openModal = (bookingId, type) => {
         setBookingToCancel(bookingId);
+        setModalActionType(type);
         setIsModalOpen(true);
     };
 
-    const handleCancelBooking = async (bookingId) => {
-        if (!bookingId) return;
+    const handleActionConfirm = async () => {
+        if (!bookingToCancel) return;
 
         try {
             const token = localStorage.getItem('token');
@@ -54,19 +55,33 @@ const MyBookings = () => {
                     Authorization: `Bearer ${token}`
                 }
             };
-            await axios.put(`https://car-rental-software.onrender.com/api/bookings/${bookingId}/cancel`, {}, config);
-            
-            // UI-ஐ உடனே அப்டேட் செய்தல்
-            setBookings((prevBookings) =>
-                Array.isArray(prevBookings) 
-                    ? prevBookings.map((b) => (b._id === bookingId ? { ...b, status: 'Cancelled' } : b))
-                    : []
-            );
+
+            if (modalActionType === 'cancel') {
+                // புக்கிங்கை கேன்சல் செய்ய
+                await axios.put(`https://car-rental-software.onrender.com/api/bookings/${bookingToCancel}/cancel`, {}, config);
+                
+                setBookings((prevBookings) =>
+                    Array.isArray(prevBookings) 
+                        ? prevBookings.map((b) => (b._id === bookingToCancel ? { ...b, status: 'Cancelled' } : b))
+                        : []
+                );
+                alert('Booking cancelled successfully.');
+            } else {
+                // பெர்மனன்ட் டெலிட் செய்ய (Backend-ல் இந்த ரூட் இருக்க வேண்டும்)
+                await axios.delete(`https://car-rental-software.onrender.com/api/bookings/${bookingToCancel}`, config);
+                
+                setBookings((prevBookings) =>
+                    Array.isArray(prevBookings) 
+                        ? prevBookings.filter((b) => b._id !== bookingToCancel)
+                        : []
+                );
+                alert('Booking deleted permanently.');
+            }
+
             setIsModalOpen(false);
             setBookingToCancel(null);
-            alert('Booking cancelled successfully.');
-        } catch (err) { // <--- இங்கே 'else (err)' என்பதற்கு பதிலாக 'catch (err)' என மாற்றப்பட்டுள்ளது
-            alert(err.response?.data?.message || 'Failed to cancel booking');
+        } catch (err) {
+            alert(err.response?.data?.message || 'Action failed');
         }
     };
 
@@ -93,16 +108,20 @@ const MyBookings = () => {
             <Modal 
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
-                title="Confirm Cancellation"
+                title={modalActionType === 'cancel' ? "Confirm Cancellation" : "Confirm Permanent Deletion"}
             >
                 <div>
-                    <p className="text-slate-600">Are you sure you want to cancel this booking? This action cannot be undone.</p>
+                    <p className="text-slate-600">
+                        {modalActionType === 'cancel' 
+                            ? "Are you sure you want to cancel this booking?" 
+                            : "Are you sure you want to delete this booking permanently from the database? This action cannot be undone."}
+                    </p>
                     <div className="flex justify-end gap-3 mt-5">
                         <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300">
-                            Keep Booking
+                            Cancel
                         </button>
-                        <button onClick={() => handleCancelBooking(bookingToCancel)} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                            Confirm Cancel
+                        <button onClick={handleActionConfirm} className={`px-4 py-2 text-white rounded-md ${modalActionType === 'cancel' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-red-600 hover:bg-red-700'}`}>
+                            {modalActionType === 'cancel' ? 'Confirm Cancel' : 'Delete Permanently'}
                         </button>
                     </div>
                 </div>
@@ -121,9 +140,10 @@ const MyBookings = () => {
                 <div className="flex flex-col gap-5">
                     {bookings.map((booking) => {
                         if (!booking) return null;
+                        const isCancelled = booking.status === 'Cancelled';
 
                         return (
-                            <div key={booking._id || Math.random()} className={`bg-slate-900 rounded-xl p-5 shadow-lg flex flex-wrap justify-between items-center gap-5 border-l-4 ${booking.status === 'Cancelled' ? 'border-red-500' : 'border-green-500'}`}>
+                            <div key={booking._id || Math.random()} className={`bg-slate-900 rounded-xl p-5 shadow-lg flex flex-wrap justify-between items-center gap-5 border-l-4 ${isCancelled ? 'border-red-500' : 'border-green-500'}`}>
                                 <div className="flex gap-5 items-center">
                                     <div className="w-28 h-20 bg-slate-800 rounded-lg overflow-hidden">
                                         <img src={booking.car?.image || 'https://via.placeholder.com/150?text=Car'} alt={booking.car?.name || 'Car'} className="w-full h-full object-cover" />
@@ -140,14 +160,18 @@ const MyBookings = () => {
                                 </div>
 
                                 <div className="flex flex-col items-end gap-3">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${booking.status === 'Cancelled' ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`}>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${isCancelled ? 'bg-red-500/20 text-red-300' : 'bg-green-500/20 text-green-300'}`}>
                                         {booking.status || 'Confirmed'}
                                     </span>
 
                                     <div className="flex gap-2">
-                                        {booking.status !== 'Cancelled' && (
-                                            <button onClick={() => openCancelModal(booking._id)} className="px-3 py-1.5 bg-red-600/80 hover:bg-red-600 text-white text-xs font-semibold rounded-md transition">
-                                                Cancel
+                                        {isCancelled ? (
+                                            <button onClick={() => openModal(booking._id, 'delete')} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-md transition">
+                                                Delete 🗑️
+                                            </button>
+                                        ) : (
+                                            <button onClick={() => openModal(booking._id, 'cancel')} className="px-3 py-1.5 bg-yellow-600/80 hover:bg-yellow-600 text-white text-xs font-semibold rounded-md transition">
+                                                Cancel ❌
                                             </button>
                                         )}
                                     </div>

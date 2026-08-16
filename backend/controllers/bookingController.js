@@ -106,7 +106,6 @@ exports.createBooking = async (req, res) => {
                     <!-- Header -->
                     <tr>
                       <td align="center" style="background-color: #2c3e50; padding: 30px 20px;">
-                        <!-- Logo without round shape -->
                         <img src="${logoImageUrl}" alt="Car Rental Logo" width="120" style="display: block; border-radius: 4px; margin-bottom: 10px;">
                         <h1 style="margin: 15px 0 0; color: #ffffff; font-size: 26px; font-weight: bold;">Booking Confirmed!</h1>
                         <p style="margin: 5px 0 0; color: #bdc3c7; font-size: 15px;">Your journey is just around the corner.</p>
@@ -245,6 +244,31 @@ exports.cancelBooking = async (req, res) => {
     console.log('✅ BOOKING CANCELLED:', booking._id);
     return res.status(200).json({ success: true, message: 'Booking cancelled successfully.', data: booking });
   } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.deleteBookingPermanently = async (req, res) => {
+  try {
+    const bookingId = req.params.id;
+    
+    if (!isValidObjectId(bookingId)) {
+      return res.status(400).json({ success: false, error: 'Invalid booking ID.' });
+    }
+
+    const deletedBooking = await Booking.findByIdAndDelete(bookingId);
+    
+    if (!deletedBooking) {
+      return res.status(404).json({ success: false, error: 'Booking not found.' });
+    }
+
+    console.log(`🗑️ BOOKING PERMANENTLY DELETED: ${bookingId}`);
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Booking deleted permanently from database.' 
+    });
+  } catch (error) {
+    console.error('❌ DELETE BOOKING ERROR:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 };

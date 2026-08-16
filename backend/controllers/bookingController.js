@@ -123,7 +123,7 @@ exports.createBooking = async (req, res) => {
                       <td style="padding: 35px 30px;">
                         <p style="font-size: 18px; color: #2c3e50; margin: 0 0 20px;">Hello <strong>${userInfo.name || 'Customer'}</strong>,</p>
                         <p style="font-size: 16px; line-height: 1.6; color: #555; margin: 0 0 25px;">
-                          Thank you for choosing our service! We're excited to confirm your car rental booking. Click below to view your full tax invoice and trip details.
+                          Thank you for choosing our service! We're excited to confirm your car rental booking. Below are your complete trip details, locations, and tax invoice breakdown.
                         </p>
 
                         <!-- Booking Summary -->
@@ -135,9 +135,30 @@ exports.createBooking = async (req, res) => {
                             </td>
                           </tr>
                           <tr>
-                            <td style="padding-top: 15px;">
+                            <td style="padding: 15px 0; border-bottom: 1px solid #dde4e6;">
                               <p style="margin: 0; color: #7f8c8d; font-size: 14px;">Car</p>
                               <p style="margin: 5px 0 0; color: #2c3e50; font-size: 16px; font-weight: bold;">${carInfo.name || carInfo.carName || 'Car'}</p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 15px 0; border-bottom: 1px solid #dde4e6;">
+                              <p style="margin: 0; color: #7f8c8d; font-size: 14px;">Rental Duration & Time</p>
+                              <p style="margin: 5px 0 0; color: #2c3e50; font-size: 15px; font-weight: bold;">
+                                From: ${new Date(booking.startDate).toLocaleString()} <br/>
+                                To: ${new Date(booking.endDate).toLocaleString()}
+                              </p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 15px 0; border-bottom: 1px solid #dde4e6;">
+                              <p style="margin: 0; color: #7f8c8d; font-size: 14px;">Pick-up Location</p>
+                              <p style="margin: 5px 0 0; color: #2c3e50; font-size: 15px; font-weight: bold;">📍 ${booking.pickupLocation}</p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding-top: 15px;">
+                              <p style="margin: 0; color: #7f8c8d; font-size: 14px;">Drop-off Location</p>
+                              <p style="margin: 5px 0 0; color: #2c3e50; font-size: 15px; font-weight: bold;">🏁 ${booking.dropoffLocation}</p>
                             </td>
                           </tr>
                         </table>

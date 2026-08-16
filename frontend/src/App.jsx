@@ -7,6 +7,7 @@ import Cars from './pages/Cars';
 import CarDetails from './pages/CarDetails';
 import Booking from './pages/Booking';
 import Payment from './pages/Payment';
+import PaymentInvoice from './pages/PaymentInvoice'; // <-- புதிதாக சேர்க்கப்பட்ட இன்வாய்ஸ் பக்கம்
 import Register from './pages/Register';
 import MyBookings from './pages/MyBookings';
 import Profile from './pages/Profile';
@@ -75,6 +76,10 @@ function App() {
                             </ProtectedRoute>
                         } />
                         <Route path="/payments" element={<Payment />} />
+                        
+                        {/* Tax Invoice Page (ईமெயிலில் இருந்து கிளிக் செய்து வருபவர்களுக்கான பக்கம்) */}
+                        <Route path="/payment-invoice" element={<PaymentInvoice />} />
+
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                         
@@ -95,7 +100,5 @@ function App() {
         </Router>
     );
 }
-
-
 
 export default App;

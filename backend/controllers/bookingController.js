@@ -7,6 +7,7 @@ const transporter = require('../config/mail');
 
 const GST_RATE = 18;
 const logoImageUrl = 'https://res.cloudinary.com/dfbkat3cb/image/upload/w_150,h_150,c_fill,r_max/v1786468571/logo_i6gox8.jpg';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://car-rental-software.onrender.com';
 
 const formatCurrency = (amount) => {
   return `₹${Number(amount).toLocaleString('en-IN', {
@@ -89,6 +90,8 @@ exports.createBooking = async (req, res) => {
     let emailSent = false;
     if (userInfo.email) {
       try {
+        const invoiceLink = `${FRONTEND_URL}/payments?bookingId=${booking._id}`;
+
         const htmlTemplate = `
           <!DOCTYPE html>
           <html lang="en">
@@ -103,12 +106,16 @@ exports.createBooking = async (req, res) => {
                 <td align="center" style="padding: 20px;">
                   <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                     
-                    <!-- Header -->
+                    <!-- Header with Clickable Full Logo -->
                     <tr>
-                      <td align="center" style="background-color: #2c3e50; padding: 30px 20px;">
-                        <img src="${logoImageUrl}" alt="Car Rental Logo" width="120" style="display: block; border-radius: 4px; margin-bottom: 10px;">
-                        <h1 style="margin: 15px 0 0; color: #ffffff; font-size: 26px; font-weight: bold;">Booking Confirmed!</h1>
-                        <p style="margin: 5px 0 0; color: #bdc3c7; font-size: 15px;">Your journey is just around the corner.</p>
+                      <td align="center" style="background-color: #2563eb; padding: 30px 20px;">
+                        <a href="${invoiceLink}" target="_blank" style="text-decoration: none;">
+                          <div style="width: 90px; height: 90px; margin: 0 auto 15px auto; background: #ffffff; border-radius: 50%; padding: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); display: inline-block;">
+                            <img src="${logoImageUrl}" alt="Car Rental Logo" width="82" height="82" style="display: block; border-radius: 50%; object-fit: cover;">
+                          </div>
+                        </a>
+                        <h1 style="margin: 10px 0 0; color: #ffffff; font-size: 26px; font-weight: bold;">Car Rental Booking Confirmed!</h1>
+                        <p style="margin: 5px 0 0; color: #e2e8f0; font-size: 15px;">Your journey is just around the corner.</p>
                       </td>
                     </tr>
 
@@ -117,7 +124,7 @@ exports.createBooking = async (req, res) => {
                       <td style="padding: 35px 30px;">
                         <p style="font-size: 18px; color: #2c3e50; margin: 0 0 20px;">Hello <strong>${userInfo.name || 'Customer'}</strong>,</p>
                         <p style="font-size: 16px; line-height: 1.6; color: #555; margin: 0 0 25px;">
-                          Thank you for choosing our service! We're excited to confirm your car rental booking.
+                          Thank you for choosing our service! We're excited to confirm your car rental booking. Click below to view your full tax invoice and trip details.
                         </p>
 
                         <!-- Booking Summary -->
@@ -136,7 +143,7 @@ exports.createBooking = async (req, res) => {
                           </tr>
                         </table>
 
-                        <!-- Payment Summary -->
+                        <!-- Payment Summary with 18% GST -->
                         <h2 style="font-size: 20px; color: #34495e; margin: 35px 0 15px; border-top: 1px solid #ecf0f1; padding-top: 25px;">Payment Summary</h2>
                         <table width="100%" cellpadding="0" cellspacing="0" border="0">
                           <tr>
@@ -152,6 +159,13 @@ exports.createBooking = async (req, res) => {
                             <td align="right" style="padding: 15px 0 0; border-top: 2px solid #ecf0f1; font-size: 20px; font-weight: bold; color: #27ae60;">${formatCurrency(grandTotal)}</td>
                           </tr>
                         </table>
+
+                        <!-- Action Button to View Invoice -->
+                        <div style="text-align: center; margin-top: 35px;">
+                          <a href="${invoiceLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px; box-shadow: 0 4px 10px rgba(37,99,235,0.3);">
+                            View Complete Tax Invoice & Details
+                          </a>
+                        </div>
 
                       </td>
                     </tr>
@@ -173,7 +187,7 @@ exports.createBooking = async (req, res) => {
         await transporter.sendMail({
           from: `"Car Rental Support" <${process.env.SMTP_SENDER_EMAIL}>`,
           to: userInfo.email,
-          subject: '🚗 Car Rental Booking Confirmation',
+          subject: '🚗 Car Rental Booking Confirmation & Tax Breakdown',
           html: htmlTemplate,
         });
         emailSent = true;
@@ -238,7 +252,8 @@ exports.cancelBooking = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Completed booking cannot be cancelled.' });
     }
 
-    booking.status = 'cancelled';
+    status = 'cancelled';
+    booking.status = status;
     await booking.save();
 
     console.log('✅ BOOKING CANCELLED:', booking._id);

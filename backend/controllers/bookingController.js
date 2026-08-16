@@ -3,7 +3,6 @@ const Booking = require('../models/Booking');
 const User = require('../models/User');
 const Car = require('../models/Car');
 const axios = require('axios');
-const transporter = require('../config/mail');
 
 const GST_RATE = 18;
 const logoImageUrl = 'https://res.cloudinary.com/dfbkat3cb/image/upload/w_150,h_150,c_fill,r_max/v1786468571/logo_i6gox8.jpg';
@@ -184,16 +183,27 @@ exports.createBooking = async (req, res) => {
           </html>
         `;
 
-        await transporter.sendMail({
-          from: `"Car Rental Support" <${process.env.SMTP_SENDER_EMAIL}>`,
-          to: userInfo.email,
+        // Brevo HTTP API மூலம் ஈமெயில் அனுப்புதல் (DNS பிரச்சனை வராது)
+        await axios.post('https://api.brevo.com/v3/smtp/email', {
+          sender: { 
+            name: "Car Rental Support", 
+            email: process.env.SMTP_SENDER_EMAIL || "b56c80001@smtp-brevo.com" 
+          },
+          to: [{ email: userInfo.email }],
           subject: '🚗 Car Rental Booking Confirmation & Tax Breakdown',
-          html: htmlTemplate,
+          htmlContent: htmlTemplate
+        }, {
+          headers: {
+            'api-key': process.env.BREVO_API_KEY,
+            'content-type': 'application/json',
+            'accept': 'application/json'
+          }
         });
+
         emailSent = true;
-        console.log('✅ EMAIL SENT:', userInfo.email);
+        console.log('✅ EMAIL SENT VIA BREVO API:', userInfo.email);
       } catch (err) {
-        console.error('❌ EMAIL FAILED:', err.message);
+        console.error('❌ EMAIL FAILED:', err.response?.data || err.message);
       }
     }
 
@@ -252,8 +262,7 @@ exports.cancelBooking = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Completed booking cannot be cancelled.' });
     }
 
-    status = 'cancelled';
-    booking.status = status;
+    booking.status = 'cancelled';
     await booking.save();
 
     console.log('✅ BOOKING CANCELLED:', booking._id);

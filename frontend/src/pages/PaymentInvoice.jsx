@@ -1,36 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com';
-const logoImageUrl = 'https://res.cloudinary.com/dfbkat3cb/image/upload/w_150,h_150,c_fill,r_max/v1786468571/logo_i6gox8.jpg';
 
 const PaymentInvoice = () => {
     const [searchParams] = useSearchParams();
     const bookingId = searchParams.get('bookingId');
-    
+
     const [booking, setBooking] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchBookingDetails = async () => {
             if (!bookingId) {
-                setError('Booking ID not found in URL.');
+                setError('No booking ID provided in the URL.');
                 setLoading(false);
                 return;
             }
 
             try {
-                const response = await axios.get(`${API_BASE_URL}/api/v1/bookings/${bookingId}`);
-                if (response.data && response.data.success) {
-                    setBooking(response.data.data);
-                } else {
-                    setError('Failed to load booking details.');
-                }
+                const token = localStorage.getItem('token');
+                const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+
+                // 🛠️ சரியான API ரூட் மூலம் புக்கிங் விவரங்களைப் பெறுதல்
+                const response = await axios.get(`${API_BASE_URL}/api/v1/bookings/${bookingId}`, config);
+                
+                const bookingData = response.data?.data || response.data;
+                setBooking(bookingData);
             } catch (err) {
-                console.error('Error fetching booking:', err);
-                setError('Something went wrong while fetching invoice details.');
+                console.error('Error fetching invoice:', err);
+                setError(err.response?.data?.error || 'Failed to load invoice details.');
             } finally {
                 setLoading(false);
             }
@@ -39,111 +40,140 @@ const PaymentInvoice = () => {
         fetchBookingDetails();
     }, [bookingId]);
 
-    const formatCurrency = (amount) => {
-        return `₹${Number(amount || 0).toLocaleString('en-IN', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        })}`;
-    };
-
-    // 📥 பிரிண்ட் டூல்பாக்ஸ் அல்லது PDF ஆக சேமிக்க
-    const handleDownloadPDF = () => {
+    const handlePrint = () => {
         window.print();
     };
 
     if (loading) {
         return (
-            <div style={{ textAlign: 'center', padding: '50px', fontFamily: 'Arial, sans-serif' }}>
-                <h2>Loading Tax Invoice...</h2>
+            <div className="flex justify-center items-center min-h-screen bg-slate-950 text-slate-300">
+                <div className="text-lg font-semibold animate-pulse">Loading Tax Invoice...</div>
             </div>
         );
     }
 
     if (error || !booking) {
         return (
-            <div style={{ textAlign: 'center', padding: '50px', fontFamily: 'Arial, sans-serif', color: '#ef4444' }}>
-                <h2>{error || 'Booking not found'}</h2>
+            <div className="flex flex-col justify-center items-center min-h-screen bg-slate-950 text-center p-5">
+                <div className="bg-red-500/10 backdrop-blur-md p-8 rounded-2xl border border-red-500/20 max-w-md shadow-2xl">
+                    <h2 className="text-2xl font-bold text-red-400 mb-4">Invoice Not Found</h2>
+                    <p className="text-red-300/80 mb-6">{error || 'Could not retrieve invoice details.'}</p>
+                    <Link to="/" className="px-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors">
+                        Go to Home
+                    </Link>
+                </div>
             </div>
         );
     }
 
+    const car = booking.car || {};
+    const user = booking.user || {};
+    const gstRate = booking.gstPercentage || 18;
+    const baseAmount = booking.baseAmount || (booking.totalAmount ? booking.totalAmount / (1 + gstRate / 100) : 0);
+    const gstAmount = booking.gstAmount || (baseAmount * gstRate) / 100;
+    const totalAmount = booking.totalAmount || (baseAmount + gstAmount);
+
     return (
-        <div style={{ fontFamily: 'Arial, sans-serif', backgroundColor: '#f8fafc', padding: '30px 15px', minHeight: '100vh' }}>
-            <div style={{ maxWidth: '700px', margin: '0 auto', backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+        <div className="min-h-screen bg-slate-950 py-10 px-4 sm:px-6 flex flex-col items-center">
+            {/* Action Buttons (Hidden when printing) */}
+            <div className="max-w-3xl w-full flex justify-between items-center mb-6 print:hidden">
+                <Link to="/my-bookings" className="px-4 py-2 bg-slate-800 text-slate-200 rounded-lg hover:bg-slate-700 transition text-sm font-semibold">
+                    &larr; Back to My Bookings
+                </Link>
+                <button 
+                    onClick={handlePrint}
+                    className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm font-semibold shadow-lg shadow-blue-600/30 flex items-center gap-2"
+                >
+                    Print / Download PDF 🖨️
+                </button>
+            </div>
+
+            {/* Invoice Container */}
+            <div className="max-w-3xl w-full bg-white text-slate-800 rounded-2xl shadow-2xl overflow-hidden p-8 sm:p-12 print:shadow-none print:p-0">
                 
-                {/* Invoice Header */}
-                <div style={{ backgroundColor: '#2563eb', color: '#ffffff', padding: '30px', textAlign: 'center' }}>
-                    <div style={{ width: '80px', height: '80px', margin: '0 auto 15px auto', background: '#ffffff', borderRadius: '50%', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-                        <img src={logoImageUrl} alt="Company Logo" style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover' }} />
+                {/* Header */}
+                <div className="flex justify-between items-start border-b border-slate-200 pb-8 mb-8">
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-600 tracking-tight">TAX INVOICE</h1>
+                        <p className="text-xs text-slate-500 mt-1">Car Rental Software Services</p>
                     </div>
-                    <h1 style={{ margin: '0', fontSize: '24px', fontWeight: 'bold' }}>Tax Invoice</h1>
-                    <p style={{ margin: '5px 0 0', fontSize: '14px', color: '#e2e8f0' }}>Car Rental Services Official Receipt</p>
+                    <div className="text-right">
+                        <p className="text-sm font-bold text-slate-700">Invoice ID: <span className="font-normal text-slate-500">#{booking._id?.slice(-8).toUpperCase()}</span></p>
+                        <p className="text-xs text-slate-500 mt-1">Date: {new Date(booking.createdAt || Date.now()).toLocaleDateString()}</p>
+                        <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                            booking.status === 'Cancelled' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                        }`}>
+                            {booking.status || 'Confirmed'}
+                        </span>
+                    </div>
                 </div>
 
-                {/* Invoice Body */}
-                <div style={{ padding: '30px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '25px', borderBottom: '1px solid #e2e8f0', paddingBottom: '15px' }}>
-                        <div>
-                            <p style={{ margin: '0 0 5px', color: '#64748b', fontSize: '13px' }}>Billed To:</p>
-                            <p style={{ margin: '0', fontWeight: 'bold', fontSize: '16px', color: '#1e293b' }}>{booking.user?.name || 'Customer'}</p>
-                            <p style={{ margin: '3px 0 0', fontSize: '14px', color: '#475569' }}>{booking.user?.email}</p>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                            <p style={{ margin: '0 0 5px', color: '#64748b', fontSize: '13px' }}>Booking ID:</p>
-                            <p style={{ margin: '0', fontWeight: 'bold', fontSize: '14px', color: '#1e293b', wordBreak: 'break-all' }}>{booking._id}</p>
-                            <p style={{ margin: '8px 0 5px', color: '#64748b', fontSize: '13px' }}>Date:</p>
-                            <p style={{ margin: '0', fontSize: '14px', color: '#475569' }}>{new Date(booking.createdAt).toLocaleDateString()}</p>
-                        </div>
+                {/* Customer & Booking Info */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8 bg-slate-50 p-6 rounded-xl border border-slate-100">
+                    <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Billed To</h3>
+                        <p className="font-bold text-slate-800 text-base">{user.name || 'Valued Customer'}</p>
+                        <p className="text-sm text-slate-600">{user.email || 'N/A'}</p>
+                        <p className="text-sm text-slate-600">{user.phone || 'N/A'}</p>
                     </div>
-
-                    {/* Trip Details */}
-                    <div style={{ backgroundColor: '#f1f5f9', padding: '15px 20px', borderRadius: '8px', marginBottom: '25px' }}>
-                        <h3 style={{ margin: '0 0 10px', fontSize: '15px', color: '#334155' }}>Trip Summary</h3>
-                        <p style={{ margin: '5px 0', fontSize: '14px', color: '#475569' }}><strong>Car:</strong> {booking.car?.name || booking.car?.carName || 'Selected Car'}</p>
-                        <p style={{ margin: '5px 0', fontSize: '14px', color: '#475569' }}><strong>Pickup:</strong> {booking.pickupLocation}</p>
-                        <p style={{ margin: '5px 0', fontSize: '14px', color: '#475569' }}><strong>Dropoff:</strong> {booking.dropoffLocation}</p>
-                        <p style={{ margin: '5px 0', fontSize: '14px', color: '#475569' }}><strong>Duration:</strong> {booking.startDate?.split('T')[0]} to {booking.endDate?.split('T')[0]}</p>
-                        <p style={{ margin: '5px 0', fontSize: '14px', color: '#475569' }}><strong>Driver Option:</strong> {booking.withDriver ? 'With Chauffeur (+₹500/day)' : 'Self Drive'}</p>
+                    <div>
+                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Trip Details</h3>
+                        <p className="text-sm text-slate-700"><strong>Pickup:</strong> {booking.pickupLocation || 'N/A'}</p>
+                        <p className="text-sm text-slate-700 mt-1"><strong>Dropoff:</strong> {booking.dropoffLocation || 'N/A'}</p>
+                        <p className="text-sm text-slate-700 mt-1">
+                            <strong>Dates:</strong> {booking.startDate ? new Date(booking.startDate).toLocaleDateString() : 'N/A'} &rarr; {booking.endDate ? new Date(booking.endDate).toLocaleDateString() : 'N/A'}
+                        </p>
                     </div>
+                </div>
 
-                    {/* GST Breakdown Table */}
-                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '30px' }}>
+                {/* Itemized Table */}
+                <div className="mb-8 overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr style={{ backgroundColor: '#e2e8f0', textAlign: 'left', color: '#334155', fontSize: '14px' }}>
-                                <th style={{ padding: '10px 12px', border: '1px solid #cbd5e1' }}>Description</th>
-                                <th style={{ padding: '10px 12px', border: '1px solid #cbd5e1', textAlign: 'right' }}>Amount</th>
+                            <tr className="border-b border-slate-200 text-slate-400 text-xs uppercase tracking-wider">
+                                <th className="py-3 font-semibold">Description</th>
+                                <th className="py-3 font-semibold text-center">Driver Option</th>
+                                <th className="py-3 font-semibold text-right">Amount</th>
                             </tr>
                         </thead>
-                        <tbody style={{ fontSize: '14px', color: '#1e293b' }}>
+                        <tbody className="divide-y divide-slate-100 text-sm">
                             <tr>
-                                <td style={{ padding: '10px 12px', border: '1px solid #cbd5e1' }}>Base Rental Amount</td>
-                                <td style={{ padding: '10px 12px', border: '1px solid #cbd5e1', textAlign: 'right' }}>{formatCurrency(booking.baseAmount)}</td>
-                            </tr>
-                            <tr>
-                                <td style={{ padding: '10px 12px', border: '1px solid #cbd5e1' }}>GST ({booking.gstPercentage || 18}%)</td>
-                                <td style={{ padding: '10px 12px', border: '1px solid #cbd5e1', textAlign: 'right' }}>{formatCurrency(booking.gstAmount)}</td>
-                            </tr>
-                            <tr style={{ fontWeight: 'bold', backgroundColor: '#f8fafc' }}>
-                                <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>Grand Total</td>
-                                <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'right', color: '#16a34a', fontSize: '16px' }}>{formatCurrency(booking.totalAmount)}</td>
+                                <td className="py-4 font-medium text-slate-800">
+                                    Car Rental: <span className="text-blue-600 font-bold">{car.name || car.carName || 'Rental Vehicle'}</span>
+                                </td>
+                                <td className="py-4 text-center text-slate-600">
+                                    {booking.withDriver ? 'With Driver' : 'Self Drive'}
+                                </td>
+                                <td className="py-4 text-right font-semibold text-slate-800">
+                                    ₹{Number(baseAmount).toFixed(2)}
+                                </td>
                             </tr>
                         </tbody>
                     </table>
+                </div>
 
-                    {/* Download PDF Button */}
-                    <div style={{ textAlign: 'center' }}>
-                        <button 
-                            onClick={handleDownloadPDF} 
-                            style={{ backgroundColor: '#2563eb', color: '#ffffff', border: 'none', padding: '12px 25px', borderRadius: '6px', fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(37,99,235,0.3)' }}
-                        >
-                            📥 Download Invoice as PDF
-                        </button>
+                {/* Totals Calculation */}
+                <div className="flex justify-end border-t border-slate-200 pt-5 mb-10">
+                    <div className="w-full sm:w-72 space-y-2 text-sm">
+                        <div className="flex justify-between text-slate-600">
+                            <span>Subtotal</span>
+                            <span>₹{Number(baseAmount).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-600">
+                            <span>GST ({gstRate}%)</span>
+                            <span>₹{Number(gstAmount).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-base font-bold text-slate-900 border-t border-slate-200 pt-3">
+                            <span>Grand Total</span>
+                            <span className="text-green-600">₹{Number(totalAmount).toFixed(2)}</span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Footer */}
-                <div style={{ backgroundColor: '#f1f5f9', padding: '15px', textAlign: 'center', fontSize: '12px', color: '#94a3b8' }}>
-                    &copy; {new Date().getFullYear()} Car Rental Services. All rights reserved.
+                {/* Footer Notes */}
+                <div className="border-t border-slate-100 pt-6 text-center text-xs text-slate-400">
+                    <p>Thank you for choosing our Car Rental Service. Have a safe journey!</p>
+                    <p className="mt-1">This is a computer-generated tax invoice and does not require a physical signature.</p>
                 </div>
 
             </div>

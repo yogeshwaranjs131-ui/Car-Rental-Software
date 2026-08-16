@@ -3,13 +3,15 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Modal from '../components/common/Modal';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com';
+
 const MyBookings = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [bookingToCancel, setBookingToCancel] = useState(null);
-    const [modalActionType, setModalActionType] = useState('cancel'); // 'cancel' அல்லது 'delete' எனப் பிரிக்க
+    const [modalActionType, setModalActionType] = useState('cancel');
 
     const fetchUserBookings = async () => {
         try {
@@ -20,7 +22,8 @@ const MyBookings = () => {
                 },
                 params: { populate: 'car' }
             };
-            const response = await axios.get('https://car-rental-software.onrender.com/api/bookings', config);            
+            // 🛠️ /api/v1/bookings என சரியாக மாற்றப்பட்டுள்ளது
+            const response = await axios.get(`${API_BASE_URL}/api/v1/bookings`, config);            
             
             const rawData = response.data;
             const bookingsData = Array.isArray(rawData) 
@@ -57,8 +60,8 @@ const MyBookings = () => {
             };
 
             if (modalActionType === 'cancel') {
-                // புக்கிங்கை கேன்சல் செய்ய
-                await axios.put(`https://car-rental-software.onrender.com/api/bookings/${bookingToCancel}/cancel`, {}, config);
+                // 🛠️ /api/v1/bookings என சரியாக மாற்றப்பட்டுள்ளது
+                await axios.put(`${API_BASE_URL}/api/v1/bookings/${bookingToCancel}/cancel`, {}, config);
                 
                 setBookings((prevBookings) =>
                     Array.isArray(prevBookings) 
@@ -67,8 +70,8 @@ const MyBookings = () => {
                 );
                 alert('Booking cancelled successfully.');
             } else {
-                // பெர்மனன்ட் டெலிட் செய்ய (Backend-ல் இந்த ரூட் இருக்க வேண்டும்)
-                await axios.delete(`https://car-rental-software.onrender.com/api/bookings/${bookingToCancel}`, config);
+                // 🛠️ /api/v1/bookings என சரியாக மாற்றப்பட்டுள்ளது
+                await axios.delete(`${API_BASE_URL}/api/v1/bookings/${bookingToCancel}`, config);
                 
                 setBookings((prevBookings) =>
                     Array.isArray(prevBookings) 
@@ -140,7 +143,7 @@ const MyBookings = () => {
                 <div className="flex flex-col gap-5">
                     {bookings.map((booking) => {
                         if (!booking) return null;
-                        const isCancelled = booking.status === 'Cancelled';
+                        const isCancelled = booking.status === 'Cancelled' || booking.status === 'cancelled';
 
                         return (
                             <div key={booking._id || Math.random()} className={`bg-slate-900 rounded-xl p-5 shadow-lg flex flex-wrap justify-between items-center gap-5 border-l-4 ${isCancelled ? 'border-red-500' : 'border-green-500'}`}>
@@ -149,7 +152,7 @@ const MyBookings = () => {
                                         <img src={booking.car?.image || 'https://via.placeholder.com/150?text=Car'} alt={booking.car?.name || 'Car'} className="w-full h-full object-cover" />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold text-white">{booking.car?.name || 'Car Rental'}</h3>
+                                        <h3 className="text-lg font-bold text-white">{booking.car?.name || booking.car?.carName || 'Car Rental'}</h3>
                                         <p className="text-sm text-slate-400">
                                             <strong>From:</strong> {booking.startDate ? new Date(booking.startDate).toLocaleDateString() : 'N/A'} &bull; <strong>To:</strong> {booking.endDate ? new Date(booking.endDate).toLocaleDateString() : 'N/A'}
                                         </p>
@@ -165,6 +168,11 @@ const MyBookings = () => {
                                     </span>
 
                                     <div className="flex gap-2">
+                                        {/* View Invoice Button */}
+                                        <Link to={`/payment-invoice?bookingId=${booking._id}`} className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition flex items-center gap-1">
+                                            Invoice 📄
+                                        </Link>
+
                                         {isCancelled ? (
                                             <button onClick={() => openModal(booking._id, 'delete')} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-md transition">
                                                 Delete 🗑️

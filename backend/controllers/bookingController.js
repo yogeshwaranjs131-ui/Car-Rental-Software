@@ -89,7 +89,7 @@ exports.createBooking = async (req, res) => {
     let emailSent = false;
     if (userInfo.email) {
       try {
-        const invoiceLink = `${FRONTEND_URL}/payments?bookingId=${booking._id}`;
+        const invoiceLink = `${FRONTEND_URL}/payment-invoice?bookingId=${booking._id}`;
 
         const htmlTemplate = `
           <!DOCTYPE html>
@@ -183,7 +183,6 @@ exports.createBooking = async (req, res) => {
           </html>
         `;
 
-        // Brevo HTTP API மூலம் புதிய பிசினஸ் மெயில் மூலமாக ஈமெயில் அனுப்புதல்
         await axios.post('https://api.brevo.com/v3/smtp/email', {
           sender: { 
             name: "Car Rental Support", 
@@ -254,7 +253,7 @@ exports.cancelBooking = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Booking not found.' });
     }
 
-    if (booking.status === 'cancelled') {
+    if (booking.status === 'Cancelled' || booking.status === 'cancelled') {
       return res.status(400).json({ success: false, error: 'Booking is already cancelled.' });
     }
 
@@ -262,7 +261,7 @@ exports.cancelBooking = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Completed booking cannot be cancelled.' });
     }
 
-    booking.status = 'cancelled';
+    booking.status = 'Cancelled';
     await booking.save();
 
     console.log('✅ BOOKING CANCELLED:', booking._id);

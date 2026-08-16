@@ -183,11 +183,11 @@ exports.createBooking = async (req, res) => {
           </html>
         `;
 
-        // Brevo HTTP API மூலம் ஈமெயில் அனுப்புதல் (DNS பிரச்சனை வராது)
+        // Brevo HTTP API மூலம் புதிய பிசினஸ் மெயில் மூலமாக ஈமெயில் அனுப்புதல்
         await axios.post('https://api.brevo.com/v3/smtp/email', {
           sender: { 
             name: "Car Rental Support", 
-            email: process.env.SMTP_SENDER_EMAIL || "b56c80001@smtp-brevo.com" 
+            email: process.env.SMTP_SENDER_EMAIL || "info.carrentalapp@gmail.com" 
           },
           to: [{ email: userInfo.email }],
           subject: '🚗 Car Rental Booking Confirmation & Tax Breakdown',

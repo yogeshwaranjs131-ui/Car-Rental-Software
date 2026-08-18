@@ -1,4 +1,4 @@
-const Coupon = require('../models/Coupon');
+const Coupon = require('../models/coupon');
 
 // 1. Create a New Coupon (স্বயமமாக கேப்ஸ்லாக்கில் சேமிக்கும்படி மாற்றப்பட்டுள்ளது)
 const createCoupon = async (req, res) => {

@@ -13,6 +13,7 @@ import MyBookings from './pages/MyBookings';
 import Profile from './pages/Profile';
 import ChangePassword from './pages/ChangePassword';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import GoogleSuccess from './pages/GoogleSuccess'; // புதிய பக்கம்
 import AdminLayout from './layouts/AdminLayout';
 
 // Admin Pages
@@ -40,6 +41,9 @@ function App() {
                         <Route path="/" element={<Home />} />
                         <Route path="/cars" element={<Cars />} />
                         <Route path="/cars/:id" element={<CarDetails />} />
+                        
+                        {/* Google Login Success Redirect */}
+                        <Route path="/google-success" element={<GoogleSuccess />} />
                         
                         {/* Car Booking Page (With ID) */}
                         <Route path="/booking/:id" element={

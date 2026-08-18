@@ -1,36 +1,107 @@
 import axios from 'axios';
 
-// Create an axios instance with a custom config
+// ==========================================
+// API BASE URL
+// ==========================================
+
 const API = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com', 
+    baseURL:
+        import.meta.env.VITE_API_URL ||
+        'https://car-rental-software.onrender.com/api',
+
     headers: {
-        'Content-Type': 'application/json'
-    }
+        'Content-Type': 'application/json',
+    },
+
+    timeout: 30000,
 });
 
-// Request interceptor to add token to headers if available
+// ==========================================
+// REQUEST INTERCEPTOR
+// Add JWT token automatically
+// ==========================================
+
 API.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
+
         if (token) {
+            config.headers = config.headers || {};
             config.headers.Authorization = `Bearer ${token}`;
         }
+
         return config;
     },
+
     (error) => {
         return Promise.reject(error);
     }
 );
 
-// Response interceptor to handle global errors (e.g., unauthorized)
+// ==========================================
+// RESPONSE INTERCEPTOR
+// Handle common API errors
+// ==========================================
+
 API.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        return response;
+    },
+
     (error) => {
-        if (error.response && error.response.status === 401) {
+        const status = error.response?.status;
+
+        // ======================================
+        // Unauthorized
+        // ======================================
+
+        if (status === 401) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '/login';
+
+            window.dispatchEvent(
+                new Event('authChange')
+            );
+
+            // Avoid redirect loop
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
         }
+
+        // ======================================
+        // Forbidden
+        // ======================================
+
+        if (status === 403) {
+            console.error(
+                'Access denied:',
+                error.response?.data
+            );
+        }
+
+        // ======================================
+        // Not Found
+        // ======================================
+
+        if (status === 404) {
+            console.error(
+                'API endpoint not found:',
+                error.config?.url
+            );
+        }
+
+        // ======================================
+        // Server Error
+        // ======================================
+
+        if (status >= 500) {
+            console.error(
+                'Server error:',
+                error.response?.data
+            );
+        }
+
         return Promise.reject(error);
     }
 );

@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../services/api'; // 👈 நம்முடைய சரியான API இன்ஸ்டன்ஸ் இம்போர்ட் செய்யப்பட்டுள்ளது
 import CarCard from '../components/cars/CarCard';
 import CarFilter from '../components/cars/CarFilter';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com';
 
 const Cars = () => {
     const [cars, setCars] = useState([]);
     const [filteredCars, setFilteredCars] = useState([]);
-    const [loading, setLoading] = useState(3);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     
     // ஃபில்டர் ஸ்டேட்டுகள்
@@ -23,7 +21,8 @@ const Cars = () => {
         const fetchCars = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`${API_BASE_URL}/api/v1/cars`);
+                // 👈 இங்கே baseURL ஏற்கனவே /api/v1 என இருப்பதால், நாம் வெறும் /cars என்று அழைத்தால் போதும்!
+                const response = await API.get('/cars'); 
                 
                 const payload = response?.data;
                 const carList = Array.isArray(payload?.data)
@@ -86,7 +85,6 @@ const Cars = () => {
     const uniqueCategories = [...new Set(cars.map(car => car.category).filter(Boolean))];
 
     return (
-        /* w-full மற்றும் m-0, p-6 கொடுத்து திரையின் ஓரம் வரை முழுமையாக விரிவுபடுத்தப்பட்டுள்ளது */
         <div className="w-full min-h-screen bg-slate-950 m-0 p-4 sm:p-6 lg:p-8">
             <h1 style={{ fontSize: '32px', fontWeight: 'bold', color: 'white', marginBottom: '30px', textAlign: 'center' }}>
                 Our Fleet
@@ -105,7 +103,6 @@ const Cars = () => {
                 </p>
             )}
 
-            {/* w-full மற்றும் grid கச்சிதமாக முழு அகலத்திற்கு விரிவடையும் */}
             <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6 m-0 p-0">
                 {filteredCars.map(car => (
                     <CarCard key={car._id || car.id} car={car} />

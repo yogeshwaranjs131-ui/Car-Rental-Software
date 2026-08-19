@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import API from '../../services/api'; // Shared API instance
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com';
-
-// தமிழ்நாட்டின் மாவட்டங்கள் மற்றும் முக்கிய நகரங்களின் விரிவான பட்டியல்
+// Comprehensive list of districts and major cities in Tamil Nadu
 const tnLocations = [
-    // Districts (மாவட்டங்கள்)
+    // Districts
     "Ariyalur, Tamil Nadu", "Chengalpattu, Tamil Nadu", "Chennai, Tamil Nadu", "Coimbatore, Tamil Nadu", 
     "Cuddalore, Tamil Nadu", "Dharmapuri, Tamil Nadu", "Dindigul, Tamil Nadu", "Erode, Tamil Nadu", 
     "Kallakurichi, Tamil Nadu", "Kanchipuram, Tamil Nadu", "Kanyakumari, Tamil Nadu", "Karur, Tamil Nadu", 
@@ -17,7 +15,7 @@ const tnLocations = [
     "Tiruchirappalli, Tamil Nadu", "Tirunelveli, Tamil Nadu", "Tirupathur, Tamil Nadu", "Tiruppur, Tamil Nadu", 
     "Tiruvallur, Tamil Nadu", "Tiruvannamalai, Tamil Nadu", "Tiruvarur, Tamil Nadu", "Vellore, Tamil Nadu", 
     "Viluppuram, Tamil Nadu", "Virudhunagar, Tamil Nadu",
-    // Major Cities & Towns (முக்கிய நகரங்கள்)
+    // Major Cities & Towns
     "Aamboor, Tamil Nadu", "Arakkonam, Tamil Nadu", "Aruppukkottai, Tamil Nadu", "Attur, Tamil Nadu",
     "Bhavani, Tamil Nadu", "Bodinayakanur, Tamil Nadu", "Chidambaram, Tamil Nadu", "Devakottai, Tamil Nadu",
     "Dharapuram, Tamil Nadu", "Edappadi, Tamil Nadu", "Gingee, Tamil Nadu", "Gobichettipalayam, Tamil Nadu",
@@ -49,7 +47,7 @@ const tnLocations = [
     "Thuraiyur, Tamil Nadu", "Tirukalukundram, Tamil Nadu", "Tiruvadanai, Tamil Nadu", "Tiruvallur, Tamil Nadu",
     "Uthagamandalam, Tamil Nadu", "Uthangarai, Tamil Nadu", "Uthiramerur, Tamil Nadu", "Vadakkuvalliyur, Tamil Nadu",
     "Vandavasi, Tamil Nadu", "Velankanni, Tamil Nadu", "Vikramasingapuram, Tamil Nadu", "Walajapet, Tamil Nadu",
-    // Neighboring States' Major Cities (அண்டை மாநில முக்கிய நகரங்கள்)
+    // Neighboring States' Major Cities
     "Bengaluru, Karnataka", "Hyderabad, Telangana", "Kochi, Kerala", "Puducherry", "Mumbai, Maharashtra", "Trivandrum, Kerala"
 ];
 
@@ -116,7 +114,6 @@ const BookingForm = ({ carId, pricePerDay }) => {
         setError('');
 
         try {
-            const token = localStorage.getItem('token');
             const userString = localStorage.getItem('user');
             const userInfo = userString ? JSON.parse(userString) : {};
             const userId = userInfo._id || userInfo.id;
@@ -126,13 +123,6 @@ const BookingForm = ({ carId, pricePerDay }) => {
                 setLoading(false);
                 return;
             }
-
-            const config = {
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                }
-            };
 
             const bookingData = {
                 user: userId,
@@ -147,11 +137,11 @@ const BookingForm = ({ carId, pricePerDay }) => {
 
             console.log("Sending booking data to backend:", bookingData);
 
-            const response = await axios.post(`${API_BASE_URL}/api/v1/bookings`, bookingData, config);
+            // Using shared API instance (/api/v1 is appended automatically)
+            const response = await API.post('/bookings', bookingData);
             
             console.log("Full booking response from backend:", response.data);
 
-            // 🛠️ பாதுகாப்பான முறையில் எந்த வடிவத்திலிருந்தும் Booking ID-ஐ எடுக்கும் முறை
             const responseData = response.data?.data || response.data?.booking || response.data;
             const bookingId = responseData?._id || responseData?.id || responseData?.bookingId;
 

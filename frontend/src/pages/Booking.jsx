@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import API from '../services/api'; // 👈 நம்முடைய சரியான Shared API இன்ஸ்டன்ஸ் இம்போர்ட் செய்யப்பட்டுள்ளது
 import BookingForm from '../components/booking/BookingForm';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com';
 
 const Booking = () => {
     const { id } = useParams();
@@ -33,35 +31,28 @@ const Booking = () => {
     
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    // Fetch Car Details and Reviews with Robust Fallback Mechanism
+    // Fetch Car Details and Reviews using API Instance
     useEffect(() => {
         const fetchCarData = async () => {
             try {
                 let foundCar = null;
-
-                // 1. ஐடி சரியான MongoDB ObjectId வடிவத்திலிருக்கிறதா என்று சோதிக்கிறோம்
                 const isValidMongoId = /^[0-9a-fA-F]{24}$/.test(id);
 
                 if (isValidMongoId) {
                     try {
-                        const res = await axios.get(`${API_BASE_URL}/api/v1/cars/${id}`);
+                        const res = await API.get(`/cars/${id}`);
                         foundCar = res.data.data || res.data.car || res.data;
                     } catch (directErr) {
                         console.warn('Direct ID fetch failed, switching to list fallback...');
                     }
                 }
 
-                // 2. நேரடி ஃபெட்ச் அல்லது ஐடி செல்லாததாக இருந்தால், அனைத்து கார்களின் பட்டியலிலிருந்து தேடுகிறோம்
                 if (!foundCar) {
-                    const allRes = await axios.get(`${API_BASE_URL}/api/v1/cars`);
+                    const allRes = await API.get('/cars');
                     const allCars = allRes.data.data || allRes.data.cars || allRes.data;
                     
                     if (Array.isArray(allCars) && allCars.length > 0) {
-                        foundCar = allCars.find(c => c._id === id || c.id === id);
-                        
-                        if (!foundCar) {
-                            foundCar = allCars[0];
-                        }
+                        foundCar = allCars.find(c => c._id === id || c.id === id) || allCars[0];
                     }
                 }
 
@@ -74,7 +65,7 @@ const Booking = () => {
                 // Reviews Fetch
                 try {
                     const carTargetId = foundCar._id || foundCar.id || id;
-                    const reviewRes = await axios.get(`${API_BASE_URL}/api/v1/reviews?car=${carTargetId}`);
+                    const reviewRes = await API.get(`/reviews?car=${carTargetId}`);
                     setReviews(reviewRes.data.data || reviewRes.data.reviews || []);
                 } catch (revErr) {
                     console.warn('Reviews fetch skipped:', revErr.message);
@@ -113,9 +104,7 @@ const Booking = () => {
                 return;
             }
 
-            await axios.post(`${API_BASE_URL}/api/v1/wishlist`, { carId: car._id || car.id }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await API.post('/wishlist', { carId: car._id || car.id });
             alert('Car added to your wishlist successfully! ❤️');
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to add car to wishlist');
@@ -126,7 +115,7 @@ const Booking = () => {
 
     const handleApplyCoupon = async () => {
         try {
-            const res = await axios.post(`${API_BASE_URL}/api/v1/coupons/apply`, { code: couponCode });
+            const res = await API.post('/coupons/apply', { code: couponCode });
             const discountPercent = res.data.discountPercentage || res.data.discount || 0;
             setDiscount(discountPercent);
             setCouponMessage(`Success! ${discountPercent}% discount applied. 🎉`);
@@ -146,25 +135,22 @@ const Booking = () => {
                 return;
             }
 
-            // localStorage-இல் உள்ள user ஆப்ஜெக்டில் இருந்து userId-ஐப் பாதுகாப்பாக எடுக்கவும்
             const userString = localStorage.getItem('user');
             const userInfo = userString ? JSON.parse(userString) : {};
             const userId = userInfo?._id || userInfo?.id;
 
-            await axios.post(`${API_BASE_URL}/api/v1/reviews`, {
+            await API.post('/reviews', {
                 user: userId,
                 car: car._id || car.id || id,
                 rating: newRating,
                 comment: newComment
-            }, {
-                headers: { Authorization: `Bearer ` + token }
             });
 
             alert('Review posted successfully! ⭐');
             setNewComment('');
 
             const targetCarId = car._id || car.id || id;
-            const reviewRes = await axios.get(`${API_BASE_URL}/api/v1/reviews?car=${targetCarId}`);
+            const reviewRes = await API.get(`/reviews?car=${targetCarId}`);
             setReviews(reviewRes.data.data || reviewRes.data.reviews || []);
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to post review. Make sure you are logged in correctly.');
@@ -195,7 +181,6 @@ const Booking = () => {
 
     const baseCarPrice = car.pricePerDay || car.price || 0;
     const finalCarPrice = discount > 0 ? baseCarPrice - (baseCarPrice * discount) / 100 : baseCarPrice;
-    
     const carBrand = typeof car.brand === 'object' && car.brand !== null ? car.brand?.name : car.brand;
 
     return (
@@ -214,7 +199,6 @@ const Booking = () => {
 
             <div className="relative z-20 bg-slate-900/90 backdrop-blur-xl p-6 sm:p-8 rounded-2xl border border-slate-700 w-full max-w-3xl shadow-2xl text-slate-100 my-auto">
                 
-                {/* இங்கே navigate(-1) மாற்றப்பட்டு நேராக ஹோம் பேஜுக்கு (/) செல்லும்படி செய்யப்பட்டுள்ளது */}
                 <button
                     onClick={() => navigate('/')}
                     className="mb-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-3.5 py-1.5 rounded-lg text-sm transition font-medium inline-flex items-center gap-1.5 cursor-pointer"

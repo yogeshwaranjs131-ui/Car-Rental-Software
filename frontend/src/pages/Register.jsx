@@ -32,11 +32,12 @@ const Register = () => {
         setError(null);
 
         try {
-            const response = await API.post('/api/auth/register', formData);
+            // இங்கே /api என்பதை நீக்கிவிட்டு நேզியாக /auth/register கொடுக்க வேண்டும்
+            const response = await API.post('/auth/register', formData);
             
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.data || response.data.user)); 
-            alert('Registration successful!');
+            alert('Registration successful! 🎉');
             navigate('/');
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to register. Please try again.');
@@ -49,7 +50,11 @@ const Register = () => {
         <div className="fixed inset-0 w-screen h-screen flex justify-center items-center overflow-hidden z-50">
             {/* Background Carousel Images with Clear Visibility */}
             {carImages.map((img, index) => (
-                <div key={index} className={`absolute inset-0 w-full h-full bg-cover bg-center brightness-65 transition-opacity duration-1500 -z-10 ${index === currentImage ? 'opacity-100' : 'opacity-0'}`} style={{ backgroundImage: `url(${img})` }} />
+                <div 
+                    key={index} 
+                    className={`absolute inset-0 w-full h-full bg-cover bg-center brightness-75 transition-opacity duration-1500 -z-10 ${index === currentImage ? 'opacity-100' : 'opacity-0'}`} 
+                    style={{ backgroundImage: `url(${img})` }} 
+                />
             ))}
 
             {/* Highly Transparent Glassmorphism Register Form */}

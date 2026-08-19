@@ -5,9 +5,7 @@ import axios from 'axios';
 // ==========================================
 
 const API = axios.create({
-    baseURL:
-        import.meta.env.VITE_API_URL ||
-        'https://car-rental-software.onrender.com/api',
+    baseURL: import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com/api/v1',
 
     headers: {
         'Content-Type': 'application/json',
@@ -27,6 +25,7 @@ API.interceptors.request.use(
 
         if (token) {
             config.headers = config.headers || {};
+            // இங்கே பேக் டிக் (`) குறியீடு மிக முக்கியம்!
             config.headers.Authorization = `Bearer ${token}`;
         }
 

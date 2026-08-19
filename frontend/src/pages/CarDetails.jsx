@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com';
+import API from '../services/api'; // 👈 நம்முடைய சரியான API இன்ஸ்டன்ஸ் இம்போர்ட் செய்யப்பட்டுள்ளது
 
 const CarDetails = () => {
     const { id } = useParams();
@@ -13,10 +11,9 @@ const CarDetails = () => {
     useEffect(() => {
         const fetchCarDetails = async () => {
             try {
-                // 1. பேக்என்ட் ரவுட்டுக்கு ஏற்ப சரியான /api/v1/ எண்ட்பாயிண்ட்
-                const response = await axios.get(`${API_BASE_URL}/api/v1/cars/${id}`);
+                // 👈 இங்கே baseURL ஏற்கனவே /api/v1 என இருப்பதால், நாம் வெறும் /cars/${id} என்று அழைத்தால் போதும்!
+                const response = await API.get(`/cars/${id}`);
                 
-                // 2. பேக்என்ட் ரெஸ்பான்ஸ் எந்த வடிவத்தில் வந்தாலும் டேட்டாவை சரியாக எடுக்க:
                 const carData = response.data.car || response.data.data || response.data;
                 setCar(carData);
             } catch (err) {
@@ -29,12 +26,11 @@ const CarDetails = () => {
         fetchCarDetails();
     }, [id]);
 
-    // 3. இமேஜ் URL-ஐ முழுமையாகச் சரிசெய்து எடுக்கும் முறை
     const getImageUrl = (imagePath) => {
         const placeholder = 'https://via.placeholder.com/800x400?text=Car+Image';
         if (!imagePath) return placeholder;
 
-        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+        if (imagepath.startsWith('http://') || imagePath.startsWith('https://')) {
             return imagePath;
         }
 
@@ -45,7 +41,10 @@ const CarDetails = () => {
                 ? `/${normalizedPath}`
                 : `/uploads/${normalizedPath}`;
 
-        return `${API_BASE_URL}${cleanPath}`;
+        // 👈 இமேஜ் URL சரியாகக் கிடைக்க baseURL-ஐ பயன்படுத்துகிறோம்
+        const base = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com/api/v1';
+        const serverRoot = base.replace(/\/api\/v1$/, ''); // /api/v1-ஐ நீக்கிவிட்டு மெயின் டொமைனை எடுக்கிறோம்
+        return `${serverRoot}${cleanPath}`;
     };
 
     if (loading) {

@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import API from '../services/api'; // 👈 நம்முடைய சரியான API இன்ஸ்டன்ஸ் இம்போர்ட் செய்யப்பட்டுள்ளது
 import Modal from '../components/common/Modal';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com';
 
 const MyBookings = () => {
     const [bookings, setBookings] = useState([]);
@@ -15,15 +13,10 @@ const MyBookings = () => {
 
     const fetchUserBookings = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
+            // 👈 baseURL ஏற்கனவே /api/v1 என இருப்பதால், நாம் வெறும் /bookings என்று அழைத்தால் போதும்!
+            const response = await API.get('/bookings', {
                 params: { populate: 'car' }
-            };
-            // 🛠️ /api/v1/bookings என சரியாக மாற்றப்பட்டுள்ளது
-            const response = await axios.get(`${API_BASE_URL}/api/v1/bookings`, config);            
+            });            
             
             const rawData = response.data;
             const bookingsData = Array.isArray(rawData) 
@@ -52,16 +45,9 @@ const MyBookings = () => {
         if (!bookingToCancel) return;
 
         try {
-            const token = localStorage.getItem('token');
-            const config = {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            };
-
             if (modalActionType === 'cancel') {
-                // 🛠️ /api/v1/bookings என சரியாக மாற்றப்பட்டுள்ளது
-                await axios.put(`${API_BASE_URL}/api/v1/bookings/${bookingToCancel}/cancel`, {}, config);
+                // 👈 API இன்ஸ்டன்ஸ் மூலம் புக்கிங்கை கேன்சல் செய்தல்
+                await API.put(`/bookings/${bookingToCancel}/cancel`);
                 
                 setBookings((prevBookings) =>
                     Array.isArray(prevBookings) 
@@ -70,8 +56,8 @@ const MyBookings = () => {
                 );
                 alert('Booking cancelled successfully.');
             } else {
-                // 🛠️ /api/v1/bookings என சரியாக மாற்றப்பட்டுள்ளது
-                await axios.delete(`${API_BASE_URL}/api/v1/bookings/${bookingToCancel}`, config);
+                // 👈 API இன்ஸ்டன்ஸ் மூலம் புக்கிங்கை நிரந்தரமாக நீக்குதல்
+                await API.delete(`/bookings/${bookingToCancel}`);
                 
                 setBookings((prevBookings) =>
                     Array.isArray(prevBookings) 

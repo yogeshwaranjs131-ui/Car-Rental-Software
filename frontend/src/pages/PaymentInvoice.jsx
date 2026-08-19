@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import API from '../../services/api'; // Shared API instance
+import API from '../services/api'; // சரியான பாதை (Path)
 
 const PaymentInvoice = () => {
     const [searchParams] = useSearchParams();

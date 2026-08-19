@@ -11,7 +11,7 @@ const CarDetails = () => {
     useEffect(() => {
         const fetchCarDetails = async () => {
             try {
-                // 👈 இங்கே baseURL ஏற்கனவே /api/v1 என இருப்பதால், நாம் வெறும் /cars/${id} என்று அழைத்தால் போதும்!
+                // 👈 baseURL ஏற்கனவே /api/v1 என இருப்பதால், நாம் வெறும் /cars/${id} என்று அழைத்தால் போதும்!
                 const response = await API.get(`/cars/${id}`);
                 
                 const carData = response.data.car || response.data.data || response.data;
@@ -30,7 +30,8 @@ const CarDetails = () => {
         const placeholder = 'https://via.placeholder.com/800x400?text=Car+Image';
         if (!imagePath) return placeholder;
 
-        if (imagepath.startsWith('http://') || imagePath.startsWith('https://')) {
+        // 👈 இங்கே imagePath சரியாகப் பெரிய எழுத்துடன் (CamelCase) திருத்தப்பட்டுள்ளது
+        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
             return imagePath;
         }
 
@@ -41,9 +42,8 @@ const CarDetails = () => {
                 ? `/${normalizedPath}`
                 : `/uploads/${normalizedPath}`;
 
-        // 👈 இமேஜ் URL சரியாகக் கிடைக்க baseURL-ஐ பயன்படுத்துகிறோம்
         const base = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com/api/v1';
-        const serverRoot = base.replace(/\/api\/v1$/, ''); // /api/v1-ஐ நீக்கிவிட்டு மெயின் டொமைனை எடுக்கிறோம்
+        const serverRoot = base.replace(/\/api\/v1$/, ''); 
         return `${serverRoot}${cleanPath}`;
     };
 

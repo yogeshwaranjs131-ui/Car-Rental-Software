@@ -86,6 +86,7 @@ exports.createBooking = async (req, res) => {
 
     console.log('✅ BOOKING CREATED:', booking._id.toString());
 
+    // 1. Email Notification via Brevo API
     let emailSent = false;
     if (userInfo.email) {
       try {
@@ -105,7 +106,6 @@ exports.createBooking = async (req, res) => {
                 <td align="center" style="padding: 20px;">
                   <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
                     
-                    <!-- Header with Clickable Full Logo -->
                     <tr>
                       <td align="center" style="background-color: #2563eb; padding: 30px 20px;">
                         <a href="${invoiceLink}" target="_blank" style="text-decoration: none;">
@@ -118,7 +118,6 @@ exports.createBooking = async (req, res) => {
                       </td>
                     </tr>
 
-                    <!-- Content -->
                     <tr>
                       <td style="padding: 35px 30px;">
                         <p style="font-size: 18px; color: #2c3e50; margin: 0 0 20px;">Hello <strong>${userInfo.name || 'Customer'}</strong>,</p>
@@ -126,7 +125,6 @@ exports.createBooking = async (req, res) => {
                           Thank you for choosing our service! We're excited to confirm your car rental booking. Below are your complete trip details, locations, and tax invoice breakdown.
                         </p>
 
-                        <!-- Booking Summary -->
                         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ecf0f1; border-radius: 8px; padding: 20px;">
                           <tr>
                             <td style="padding-bottom: 15px; border-bottom: 1px solid #dde4e6;">
@@ -163,7 +161,6 @@ exports.createBooking = async (req, res) => {
                           </tr>
                         </table>
 
-                        <!-- Payment Summary with 18% GST -->
                         <h2 style="font-size: 20px; color: #34495e; margin: 35px 0 15px; border-top: 1px solid #ecf0f1; padding-top: 25px;">Payment Summary</h2>
                         <table width="100%" cellpadding="0" cellspacing="0" border="0">
                           <tr>
@@ -180,7 +177,6 @@ exports.createBooking = async (req, res) => {
                           </tr>
                         </table>
 
-                        <!-- Action Button to View Invoice -->
                         <div style="text-align: center; margin-top: 35px;">
                           <a href="${invoiceLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; font-size: 16px; box-shadow: 0 4px 10px rgba(37,99,235,0.3);">
                             View Complete Tax Invoice & Details
@@ -190,7 +186,6 @@ exports.createBooking = async (req, res) => {
                       </td>
                     </tr>
 
-                    <!-- Footer -->
                     <tr>
                       <td align="center" style="background-color: #ecf0f1; padding: 25px 20px;">
                         <p style="margin: 0; color: #7f8c8d; font-size: 13px;">© ${new Date().getFullYear()} Car Rental Software. All Rights Reserved.</p>
@@ -227,8 +222,65 @@ exports.createBooking = async (req, res) => {
       }
     }
 
+    // 2. SMS Notification via Twilio
+    let smsSent = false;
+    if (userInfo.phone) {
+      try {
+        const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
+        const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+        const twilioPhoneNumber = '+17372212163';
+
+        if (twilioAccountSid && twilioAuthToken) {
+          const client = require('twilio')(twilioAccountSid, twilioAuthToken);
+          let customerPhone = userInfo.phone.startsWith('+') ? userInfo.phone : `+${userInfo.phone}`;
+
+          const smsMessage = `Car Rental: Hi ${userInfo.name || 'Customer'}, your booking ID ${booking._id} is confirmed! Grand Total: ${formatCurrency(grandTotal)}. Thank you!`;
+
+          const smsResponse = await client.messages.create({
+            body: smsMessage,
+            from: twilioPhoneNumber,
+            to: customerPhone
+          });
+
+          smsSent = true;
+          console.log('✅ SMS SENT VIA TWILIO:', smsResponse.sid);
+        }
+      } catch (smsErr) {
+        console.error('❌ SMS FAILED:', smsErr.message);
+      }
+    }
+
+    // 3. WhatsApp Notification via Twilio Sandbox
+    let whatsappSent = false;
+    if (userInfo.phone) {
+      try {
+        const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
+        const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+
+        if (twilioAccountSid && twilioAuthToken) {
+          const client = require('twilio')(twilioAccountSid, twilioAuthToken);
+          let customerPhone = userInfo.phone.startsWith('+') ? userInfo.phone : `+${userInfo.phone}`;
+
+          const whatsappMessage = `🚗 *Car Rental Booking Confirmed!*\n\nHi ${userInfo.name || 'Customer'},\nYour booking ID: ${booking._id}\nCar: ${carInfo.name || carInfo.carName}\nPickup: ${booking.pickupLocation}\nDropoff: ${booking.dropoffLocation}\nGrand Total: ${formatCurrency(grandTotal)}\n\nThank you for choosing us!`;
+
+          const msgResponse = await client.messages.create({
+            body: whatsappMessage,
+            from: 'whatsapp:+14155238886',
+            to: `whatsapp:${customerPhone}`
+          });
+
+          whatsappSent = true;
+          console.log('✅ WHATSAPP SENT VIA TWILIO:', msgResponse.sid);
+        }
+      } catch (waErr) {
+        console.error('❌ WHATSAPP FAILED:', waErr.message);
+      }
+    }
+
     booking.emailSent = emailSent;
-    booking.confirmationSent = emailSent;
+    booking.smsSent = smsSent;
+    booking.whatsappSent = whatsappSent;
+    booking.confirmationSent = emailSent || smsSent || whatsappSent;
     await booking.save();
 
     return res.status(201).json({
@@ -274,7 +326,6 @@ exports.cancelBooking = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Booking not found.' });
     }
 
-    // Fixed to lowercase 'cancelled' to match schema enum requirements
     if (booking.status === 'cancelled') {
       return res.status(400).json({ success: false, error: 'Booking is already cancelled.' });
     }
@@ -283,7 +334,6 @@ exports.cancelBooking = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Completed booking cannot be cancelled.' });
     }
 
-    // Fixed to lowercase 'cancelled'
     booking.status = 'cancelled';
     await booking.save();
 

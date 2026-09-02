@@ -1,0 +1,17 @@
+@import "tailwindcss";@import "tailwindcss";
+
+/* டாப், பாட்டம், சைட்ஸ் முழுவதிலும் எந்த கேப்பும் இல்லாமல் இருக்க */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden;
+  background-color: #0f172a;
+}

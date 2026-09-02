@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { FaUser, FaEnvelope, FaPhone, FaShieldAlt, FaSignOutAlt, FaEdit, FaLock, FaCamera, FaCar } from 'react-icons/fa';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com';
+import API from '../utils/api'; // Centralized Axios instance
+import { FaUser, FaEnvelope, FaPhone, FaShieldAlt, FaSignOutAlt, FaEdit, FaLock, FaCamera } from 'react-icons/fa';
 
 const Profile = () => {
     const navigate = useNavigate();
@@ -21,7 +19,8 @@ const Profile = () => {
         const placeholder = 'https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg';
         if (!imagePath) return placeholder;
         if (typeof imagePath === 'string' && imagePath.startsWith('http')) return imagePath;
-        return `${API_BASE_URL}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
+        const baseURL = import.meta.env.VITE_API_URL || 'https://car-rental-software.onrender.com';
+        return `${baseURL}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
     };
 
     useEffect(() => {
@@ -32,10 +31,8 @@ const Profile = () => {
                 return;
             }
             try {
-                const config = { headers: { Authorization: `Bearer ${token}` } };
-                const response = await axios.get(`${API_BASE_URL}/api/v1/users/profile`, config).catch(() => {
-                    return axios.get(`${API_BASE_URL}/api/users/profile`, config);
-                });
+                // Since baseURL already contains /api/v1, use /users/profile only
+                const response = await API.get('/users/profile');
                 
                 const userData = response.data?.data || response.data;
                 if (userData) {
@@ -45,7 +42,7 @@ const Profile = () => {
                         email: userData.email || '', 
                         phone: userData.phone || '' 
                     });
-                    setImagePreview(getImageUrl(userData.image));
+                    setImagePreview(getImageUrl(userData.profilePicture || userData.image));
                 }
             } catch (err) {
                 setError('Failed to fetch profile. Please try again.');
@@ -93,25 +90,23 @@ const Profile = () => {
             uploadData.append('name', formData.name);
             uploadData.append('email', formData.email);
             uploadData.append('phone', formData.phone);
+            
             if (profileImageFile) {
-                uploadData.append('image', profileImageFile);
+                // Must match upload.single('profilePicture') on the backend
+                uploadData.append('profilePicture', profileImageFile);
             }
 
-            const token = localStorage.getItem('token');
             const config = {
                 headers: {
-                    Authorization: `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data'
                 }
             };
             
-            const response = await axios.put(`${API_BASE_URL}/api/v1/users/profile`, uploadData, config).catch(() => {
-                return axios.put(`${API_BASE_URL}/api/users/profile`, uploadData, config);
-            });
+            const response = await API.put('/users/profile', uploadData, config);
             
             const updatedUser = response.data?.data || response.data;
             setUser(updatedUser);
-            setImagePreview(getImageUrl(updatedUser.image));
+            setImagePreview(getImageUrl(updatedUser.profilePicture || updatedUser.image));
             
             const storedUser = JSON.parse(localStorage.getItem('user'));
             if (storedUser) {
@@ -131,7 +126,7 @@ const Profile = () => {
         setIsEditing(false);
         if (user) {
             setFormData({ name: user.name || '', email: user.email || '', phone: user.phone || '' });
-            setImagePreview(getImageUrl(user.image));
+            setImagePreview(getImageUrl(user.profilePicture || user.image));
             setProfileImageFile(null);
         }
     };
@@ -153,15 +148,12 @@ const Profile = () => {
 
     return (
         <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-slate-800">
-                
-                {/* Top Gradient Banner */}
+            <div className="bg-slate-900/95 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-slate-800">
                 <div className="h-40 bg-linear-to-r from-blue-600 via-indigo-600 to-purple-600 relative">
                     <div className="absolute inset-0 bg-black/20"></div>
                 </div>
 
                 <div className="px-6 sm:px-10 pb-10 relative">
-                    {/* Avatar & Header Profile Info */}
                     <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between -mt-16 mb-8 gap-4">
                         <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
                             <div className="relative group">
@@ -173,7 +165,7 @@ const Profile = () => {
                                 {isEditing && (
                                     <label className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition duration-300">
                                         <FaCamera className="text-white text-2xl" />
-                                        <input type="file" name="image" accept="image/*" onChange={handleFileChange} className="hidden" />
+                                        <input type="file" name="profilePicture" accept="image/*" onChange={handleFileChange} className="hidden" />
                                     </label>
                                 )}
                             </div>
@@ -188,15 +180,13 @@ const Profile = () => {
                         </span>
                     </div>
 
-                    {/* Alerts */}
                     {error && <div className="p-4 mb-6 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-center text-sm font-medium">{error}</div>}
                     {message && <div className="p-4 mb-6 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-center text-sm font-medium">{message}</div>}
 
                     {!isEditing ? (
                         <div>
-                            {/* Profile Information Cards Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="flex items-center space-x-4 bg-slate-950/50 p-4 sm:p-5 rounded-2xl border border-slate-800/80 hover:border-blue-500/30 transition">
+                                <div className="flex items-center space-x-4 bg-slate-950/50 p-4 sm:p-5 rounded-2xl border border-slate-800/80">
                                     <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400 text-lg shrink-0">
                                         <FaUser />
                                     </div>
@@ -206,7 +196,7 @@ const Profile = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center space-x-4 bg-slate-950/50 p-4 sm:p-5 rounded-2xl border border-slate-800/80 hover:border-blue-500/30 transition">
+                                <div className="flex items-center space-x-4 bg-slate-950/50 p-4 sm:p-5 rounded-2xl border border-slate-800/80">
                                     <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 text-lg shrink-0">
                                         <FaEnvelope />
                                     </div>
@@ -216,7 +206,7 @@ const Profile = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center space-x-4 bg-slate-950/50 p-4 sm:p-5 rounded-2xl border border-slate-800/80 hover:border-blue-500/30 transition">
+                                <div className="flex items-center space-x-4 bg-slate-950/50 p-4 sm:p-5 rounded-2xl border border-slate-800/80">
                                     <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-lg shrink-0">
                                         <FaPhone />
                                     </div>
@@ -226,7 +216,7 @@ const Profile = () => {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center space-x-4 bg-slate-950/50 p-4 sm:p-5 rounded-2xl border border-slate-800/80 hover:border-blue-500/30 transition">
+                                <div className="flex items-center space-x-4 bg-slate-950/50 p-4 sm:p-5 rounded-2xl border border-slate-800/80">
                                     <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 text-lg shrink-0">
                                         <FaShieldAlt />
                                     </div>
@@ -237,7 +227,6 @@ const Profile = () => {
                                 </div>
                             </div>
 
-                            {/* Action Buttons */}
                             <div className="flex flex-wrap items-center justify-between gap-4 mt-8 pt-6 border-t border-slate-800">
                                 <div className="flex flex-wrap gap-3 w-full sm:w-auto">
                                     <button 
@@ -266,7 +255,6 @@ const Profile = () => {
                             </div>
                         </div>
                     ) : (
-                        /* Edit Form Section */
                         <form onSubmit={handleUpdate} className="space-y-5">
                             <div>
                                 <label className="block mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Full Name</label>
@@ -322,7 +310,6 @@ const Profile = () => {
                             </div>
                         </form>
                     )}
-
                 </div>
             </div>
         </div>

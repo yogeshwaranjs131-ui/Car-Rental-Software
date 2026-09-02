@@ -274,7 +274,8 @@ exports.cancelBooking = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Booking not found.' });
     }
 
-    if (booking.status === 'Cancelled' || booking.status === 'cancelled') {
+    // Fixed to lowercase 'cancelled' to match schema enum requirements
+    if (booking.status === 'cancelled') {
       return res.status(400).json({ success: false, error: 'Booking is already cancelled.' });
     }
 
@@ -282,7 +283,8 @@ exports.cancelBooking = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Completed booking cannot be cancelled.' });
     }
 
-    booking.status = 'Cancelled';
+    // Fixed to lowercase 'cancelled'
+    booking.status = 'cancelled';
     await booking.save();
 
     console.log('✅ BOOKING CANCELLED:', booking._id);

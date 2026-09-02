@@ -63,6 +63,9 @@ exports.createBooking = async (req, res) => {
       return res.status(404).json({ success: false, error: 'User or Car not found.' });
     }
 
+    // 🔍 DEBUG LOGS FOR USER DATA
+    console.log('👤 USER INFO FOUND:', { id: userInfo._id, name: userInfo.name, email: userInfo.email, phone: userInfo.phone });
+
     const booking = await Booking.create({
       user: userId,
       car,
@@ -230,6 +233,8 @@ exports.createBooking = async (req, res) => {
         const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
         const twilioPhoneNumber = '+17372212163';
 
+        console.log('📲 Attempting SMS to:', userInfo.phone);
+
         if (twilioAccountSid && twilioAuthToken) {
           const client = require('twilio')(twilioAccountSid, twilioAuthToken);
           let customerPhone = userInfo.phone.startsWith('+') ? userInfo.phone : `+${userInfo.phone}`;
@@ -244,10 +249,14 @@ exports.createBooking = async (req, res) => {
 
           smsSent = true;
           console.log('✅ SMS SENT VIA TWILIO:', smsResponse.sid);
+        } else {
+          console.log('⚠️ Twilio SID or Auth Token missing for SMS');
         }
       } catch (smsErr) {
         console.error('❌ SMS FAILED:', smsErr.message);
       }
+    } else {
+      console.log('⚠️ User phone number missing, skipping SMS');
     }
 
     // 3. WhatsApp Notification via Twilio Sandbox
@@ -256,6 +265,8 @@ exports.createBooking = async (req, res) => {
       try {
         const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
         const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+
+        console.log('💬 Attempting WhatsApp to:', userInfo.phone);
 
         if (twilioAccountSid && twilioAuthToken) {
           const client = require('twilio')(twilioAccountSid, twilioAuthToken);
@@ -271,10 +282,14 @@ exports.createBooking = async (req, res) => {
 
           whatsappSent = true;
           console.log('✅ WHATSAPP SENT VIA TWILIO:', msgResponse.sid);
+        } else {
+          console.log('⚠️ Twilio SID or Auth Token missing for WhatsApp');
         }
       } catch (waErr) {
         console.error('❌ WHATSAPP FAILED:', waErr.message);
       }
+    } else {
+      console.log('⚠️ User phone number missing, skipping WhatsApp');
     }
 
     booking.emailSent = emailSent;
@@ -349,7 +364,7 @@ exports.deleteBookingPermanently = async (req, res) => {
     const bookingId = req.params.id;
     
     if (!isValidObjectId(bookingId)) {
-      return res.status(400).json({ success: false, error: 'Invalid booking ID.' });
+      return res.status(400).json({ success: false, data: { error: 'Invalid booking ID.' } });
     }
 
     const deletedBooking = await Booking.findByIdAndDelete(bookingId);
@@ -364,7 +379,7 @@ exports.deleteBookingPermanently = async (req, res) => {
       message: 'Booking deleted permanently from database.' 
     });
   } catch (error) {
-    console.error('❌ DELETE BOOKING ERROR:', error.message);
+    console.log('❌ DELETE BOOKING ERROR:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 };

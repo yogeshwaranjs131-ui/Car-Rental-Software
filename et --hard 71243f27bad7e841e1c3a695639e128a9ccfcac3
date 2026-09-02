@@ -1,0 +1,233 @@
+[33mcommit 52ce06a061598b388985b965700dae3183363a2a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Sep 2 13:41:00 2026 +0530
+
+    Add render.yaml via terminal
+
+[33mcommit ecad0c393e05d11558e9f386ba7a665b3718d584[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Sep 2 13:24:14 2026 +0530
+
+    Fix clean project structure with my-Car containing frontend and backend
+
+[33mcommit 71243f27bad7e841e1c3a695639e128a9ccfcac3[m
+Merge: bfbff56 625130b
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Sep 2 13:19:32 2026 +0530
+
+    Organize project structure inside my-Car folder
+
+[33mcommit bfbff56e8e1b63aa40920408346546b048ef13e6[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Sep 2 13:10:59 2026 +0530
+
+    Remove root level frontend and backend folders
+
+[33mcommit 625130bc02b16ea60f639b8ae21d8bfbbc552ed4[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Sep 2 13:05:01 2026 +0530
+
+    Remove unnecessary my-Car submodule/folder
+
+[33mcommit 0904292bcc21ae343b12563bd2a82bd329cbbbe0[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Sep 2 13:00:32 2026 +0530
+
+    Fix profile update multipart header
+
+[33mcommit b46492d3b2fdcec3865cdb0feb7a20243d1c9404[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Sep 2 12:40:46 2026 +0530
+
+    Install cloudinary inside backend folder
+
+[33mcommit ee71db8c01927750a7c20db6ebbb5c7916020456[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Sep 2 12:33:54 2026 +0530
+
+    Add cloudinary and storage dependencies to main package.json
+
+[33mcommit 7b3b2c5160d415ed203bd433eedfabef27dd4d10[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Sep 2 12:26:08 2026 +0530
+
+    minor fixes
+
+[33mcommit 819e23c6b58ed6d8989eca328c9d14b4a640da9b[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Tue Sep 1 20:14:56 2026 +0530
+
+    Add Cloudinary image upload and update profile routes
+
+[33mcommit 5fdcf9cbf6a8daec0d5e1a3ee9c42db59bbed531[m
+Merge: a0376ad 64e007f
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Tue Sep 1 19:23:14 2026 +0530
+
+    Merge branch 'master' of https://github.com/yogeshwaranjs131-ui/car-rental-software
+    :wq#
+
+[33mcommit a0376ad40e2a966adbd6466f9a1082b7ddd20b30[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Tue Sep 1 18:56:25 2026 +0530
+
+    Fix git embedded repo issue and update auth
+
+[33mcommit 64e007fc2a3d9dee573f7971dda586e8a91ff6dd[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Aug 19 20:34:47 2026 +0530
+
+    Update PaymentInvoice with luxury gold gradient design and Cloudinary logo
+
+[33mcommit c6fde2df2168c53e7b9a87f962af28af09f791e9[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Aug 19 20:12:42 2026 +0530
+
+    Fix PaymentInvoice API import path and deploy successfully
+
+[33mcommit a952f4488bf7e91518e3943b0b6efb2dab7ee496[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Aug 19 20:05:26 2026 +0530
+
+    Update car rental invoice design, logo, and insurance integration
+
+[33mcommit fc780409ebe11ad3d6e7a124f44d8d340c6c9b1a[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Aug 19 18:14:19 2026 +0530
+
+    Fixed booking API routes using shared API instance
+
+[33mcommit 8ea57ea7b3bc3709f1ea76cc7d5e7d5dc9945523[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Aug 19 18:05:05 2026 +0530
+
+    Fix API route 404 in Booking.jsx using shared API instance
+
+[33mcommit 6591203ab3d4b4cfa44f5c41522152eef35f50f8[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Aug 19 17:59:30 2026 +0530
+
+    Fix imagepath reference error in CarDetails.jsx
+
+[33mcommit 304742b82badb306a32ecaacf21e78e6a03d4648[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Aug 19 17:54:51 2026 +0530
+
+    Add vercel.json for SPA routing fix
+
+[33mcommit 8edab23c8dd886ffed1e2a62417b5edf72359901[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Aug 19 17:47:36 2026 +0530
+
+    Fix all API 404 routes using shared API instance for auth, cars, and bookings
+
+[33mcommit 87f0b1aab895b9bc0fef31fbbd19f28576a86d08[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Aug 19 17:31:00 2026 +0530
+
+    Fix API route for fetching cars using shared API instance
+
+[33mcommit 9d78e50b7e3af2be19fc7a1cb8c26bcbcabb680b[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Aug 19 17:05:09 2026 +0530
+
+    Fix token template literal in api.js
+
+[33mcommit 442fde6541bd5b2ab6fc3c0e5327d4959e9506d4[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Wed Aug 19 16:49:44 2026 +0530
+
+    Update login and register glassmorphism design and API routes
+
+[33mcommit 63858e85d2ca6290ece4da92bc9d29596e3af734[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Tue Aug 18 23:57:18 2026 +0530
+
+    Debug Google OAuth environment
+
+[33mcommit 57b33aff5d34c33efb1d1586a55b18e6b405b800[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Tue Aug 18 22:56:23 2026 +0530
+
+    Fix Google OAuth authentication
+
+[33mcommit 78b550de5d6e7c3b9815784cd64fc5e9b54e364e[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Tue Aug 18 21:52:44 2026 +0530
+
+    feat: Add Wishlist page with loading and empty states
+
+[33mcommit 554d532a3ddf007c19884ad966d6bf62b6fa5a00[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Tue Aug 18 21:39:47 2026 +0530
+
+    Fix: Wishlist, Coupon, and Google Login functionality
+
+[33mcommit fa8b28cba996c0dce27ad1a3bea8103e44fcb7bd[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Tue Aug 18 21:33:24 2026 +0530
+
+    Initial commit of car rental project
+
+[33mcommit d17f473f584f83f0ecada300903b8934564dfa02[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Mon Aug 17 00:27:42 2026 +0530
+
+    Add pickup and dropoff locations to booking email notification
+
+[33mcommit 1d235022c0d8414c6ca758946ac024cc0fc7eaab[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Mon Aug 17 00:10:03 2026 +0530
+
+    Complete App.jsx routing with PaymentInvoice and MyBookings
+
+[33mcommit 5589d9ffe2ef24da80c6a1d44ec80e226aa7cd9c[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Sun Aug 16 23:37:33 2026 +0530
+
+    Fixed invoice link and updated PaymentInvoice component for PDF download
+
+[33mcommit ec679d5941470efa9ca6713bc72bc6c76e107daa[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Sun Aug 16 22:56:25 2026 +0530
+
+    Update PaymentInvoice.jsx with correct api path
+
+[33mcommit 8a8e700da2cf98f2bf34fb726cd1d5b3fbf3b340[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Sun Aug 16 22:20:38 2026 +0530
+
+    First commit - Car rental app with Brevo email
+
+[33mcommit 203a38ae84ada6b9bf4f26983bac7379e15e7d49[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Sun Aug 16 20:21:20 2026 +0530
+
+    Switch to Brevo HTTP API to fix EBADNAME DNS error
+
+[33mcommit a6145730a005d6a60f54fe7ccef717c8cc03a743[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Sun Aug 16 18:38:52 2026 +0530
+
+    Added GST breakdown and email invoice with company logo
+
+[33mcommit 88fd4eeb9d56549681948b453f77bda5e9660cae[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Sun Aug 16 09:40:58 2026 +0530
+
+    Update car rental software configuration
+
+[33mcommit 9b7a90e8422d8b43fb9cb49b475d0c5e82b7990f[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Sun Aug 16 09:29:25 2026 +0530
+
+    Add permanent delete route and controller
+
+[33mcommit 086fa4180a36a0aea7815b4218cb5b1797b8707b[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@gmail.com>
+Date:   Sat Aug 15 21:55:01 2026 +0530
+
+    Fix Brevo SMTP email timeout
+
+[33mcommit 8636e76fa951938542fd98696a43bdc7159f7877[m
+Author: yogeshwaranjs131-ui <yogeshwaranjs131@
